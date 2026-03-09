@@ -10,7 +10,7 @@ export type Stage =
 
 export interface AppConfig {
   enable_payment: boolean
-  price_per_document: number
+  price_per_page: number
   currency: string
   max_file_size_mb: number
   max_pages: number
@@ -35,6 +35,7 @@ export const useFlowStore = defineStore('flow', {
     } | null,
     uploadOptions: {
       margin: 'left' as 'left' | 'right',
+      line_interval: 10 as 5 | 10,
       font_size_pt: 8,
     },
     error: null as string | null,
@@ -82,6 +83,11 @@ export const useFlowStore = defineStore('flow', {
       this.jobId = null
       this.job = null
       this.error = null
+      this.uploadOptions = {
+        margin: 'left',
+        line_interval: 10,
+        font_size_pt: 8,
+      }
     },
   },
 })
