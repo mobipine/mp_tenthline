@@ -92,7 +92,7 @@
         <div class="mt-12">
           <div
             v-if="!flow.selectedFile"
-            class="dropzone-card mx-auto max-w-3xl rounded-3xl border-2 border-dashed p-8 text-center sm:p-12"
+            class="dropzone-card cursor-pointer mx-auto max-w-3xl rounded-3xl border-2 border-dashed p-8 text-center sm:p-12"
             :class="isDragging ? 'dragging' : ''"
             @click="fileInput?.click()"
             @dragover.prevent="isDragging = true"
@@ -364,22 +364,25 @@
                   <UAlert
                     color="info"
                     icon="i-heroicons-sparkles"
-                    title="Processing in realtime"
-                    description="This updates live from websocket events during PDF processing."
+                    title="Your document is being processed"
+                    description=""
                   />
 
                   <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                     <div class="mb-3 flex items-center justify-between gap-3">
                       <p class="text-sm font-semibold text-slate-900">Adding line numbers</p>
-                      <span class="text-sm font-semibold text-primary-700">{{ flow.job?.progress ?? 0 }}%</span>
+                      <span class="text-sm font-semibold text-primary-700">{{ progressPercentage }}%</span>
                     </div>
-                    <UProgress :value="flow.job?.progress ?? 0" size="xl" />
+                    <UProgress :model-value="progressPercentage" :max="100" size="xl" />
                     <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
                       <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200">
                         Page {{ flow.job?.processed_pages ?? 0 }} / {{ flow.job?.total_pages ?? 0 }}
                       </span>
                       <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200" v-if="flow.job?.eta_seconds !== null">
-                        ETA {{ flow.job?.eta_seconds }}s
+                        ETA {{ formatEta(flow.job?.eta_seconds) }}
+                      </span>
+                      <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200" v-else>
+                        ETA calculating...
                       </span>
                     </div>
                   </div>
@@ -468,126 +471,139 @@
       <template #content>
         <div class="p-6 sm:p-8">
           <div class="mx-auto w-full max-w-md">
-            <div class="mb-5">
-              <h3 class="text-2xl font-semibold tracking-tight text-slate-900">
-                {{ authMode === 'login' ? 'Sign in' : authMode === 'register' ? 'Create account' : 'Forgot password' }}
-              </h3>
-              <p class="mt-1 text-sm text-slate-600">{{ authSubtitle }}</p>
+            <div class="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <h3 class="text-2xl font-semibold tracking-tight text-slate-900">
+                  {{ authMode === 'login' ? 'Sign in' : authMode === 'register' ? 'Create account' : 'Forgot password' }}
+                </h3>
+                <p class="mt-1 text-sm text-slate-600">{{ authSubtitle }}</p>
+              </div>
+              <UButton
+                icon="i-heroicons-x-mark"
+                color="gray"
+                variant="ghost"
+                size="sm"
+                class="-mr-1 -mt-1 rounded-lg"
+                aria-label="Close authentication modal"
+                @click="authModalOpen = false"
+              />
             </div>
 
-            <div class="space-y-4">
-              <div
-                v-if="authMessage"
-                class="rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-800"
-              >
-                {{ authMessage }}
-              </div>
-
-              <div
-                v-if="authError"
-                class="rounded-xl border border-rose-200 bg-rose-50/90 px-4 py-3 text-sm text-rose-700"
-              >
-                {{ authError }}
-              </div>
-
-              <UFormField v-if="authMode === 'register'" label="Full name">
-                <UInput v-model="registerName" size="lg" class="w-full" placeholder="Jane Doe" />
-              </UFormField>
-
-              <UFormField label="Email address">
-                <UInput v-model="authEmail" type="email" size="lg" class="w-full" placeholder="you@example.com" />
-              </UFormField>
-
-              <UFormField v-if="authMode !== 'forgot'" label="Password">
-                <UInput v-model="authPassword" type="password" size="lg" class="w-full" placeholder="Enter password" />
-              </UFormField>
-
-              <UFormField v-if="authMode === 'register'" label="Confirm password">
-                <UInput v-model="authPasswordConfirmation" type="password" size="lg" class="w-full" placeholder="Repeat password" />
-              </UFormField>
-
-              <p v-if="authMode === 'forgot'" class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
-                We will send a secure reset link to this email.
-              </p>
-
-              <UButton
-                v-if="authMode === 'login'"
-                block
-                size="lg"
-                color="primary"
-                class="rounded-xl py-3 text-base font-semibold shadow-sm"
-                :loading="authLoading"
-                @click="login"
-              >
-                Sign in
-              </UButton>
-              <UButton
-                v-else-if="authMode === 'register'"
-                block
-                size="lg"
-                color="primary"
-                class="rounded-xl py-3 text-base font-semibold shadow-sm"
-                :loading="authLoading"
-                @click="register"
-              >
-                Create account
-              </UButton>
-              <UButton
-                v-else
-                block
-                size="lg"
-                color="primary"
-                class="rounded-xl py-3 text-base font-semibold shadow-sm"
-                :loading="authLoading"
-                @click="sendForgotPassword"
-              >
-                Send reset link
-              </UButton>
-            </div>
-
-            <div class="mt-4 text-sm">
-              <div v-if="authMode === 'login'" class="flex items-center justify-between gap-4">
-                <button
-                  type="button"
-                  class="cursor-pointer font-medium text-primary-700 transition hover:text-primary-800 hover:underline"
-                  @click="openAuthModal('forgot')"
+            <Transition name="auth-mode" mode="out-in">
+              <div :key="authMode" class="space-y-4">
+                <div
+                  v-if="authMessage"
+                  class="rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-800"
                 >
-                  Forgot password?
-                </button>
-                <p class="text-slate-600">
-                  Don't have an account?
-                  <button
-                    type="button"
-                    class="cursor-pointer font-medium text-primary-700 transition hover:text-primary-800 hover:underline"
-                    @click="openAuthModal('register')"
-                  >
-                    Sign up
-                  </button>
+                  {{ authMessage }}
+                </div>
+
+                <div
+                  v-if="authError"
+                  class="rounded-xl border border-rose-200 bg-rose-50/90 px-4 py-3 text-sm text-rose-700"
+                >
+                  {{ authError }}
+                </div>
+
+                <UFormField v-if="authMode === 'register'" label="Full name">
+                  <UInput v-model="registerName" size="lg" class="w-full" placeholder="Jane Doe" />
+                </UFormField>
+
+                <UFormField label="Email address">
+                  <UInput v-model="authEmail" type="email" size="lg" class="w-full" placeholder="you@example.com" />
+                </UFormField>
+
+                <UFormField v-if="authMode !== 'forgot'" label="Password">
+                  <UInput v-model="authPassword" type="password" size="lg" class="w-full" placeholder="Enter password" />
+                </UFormField>
+
+                <UFormField v-if="authMode === 'register'" label="Confirm password">
+                  <UInput v-model="authPasswordConfirmation" type="password" size="lg" class="w-full" placeholder="Repeat password" />
+                </UFormField>
+
+                <p v-if="authMode === 'forgot'" class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-600">
+                  We will send a secure reset link to this email.
                 </p>
-              </div>
 
-              <div v-else-if="authMode === 'register'" class="text-center text-slate-600">
-                Already have an account?
-                <button
-                  type="button"
-                  class="cursor-pointer font-medium text-primary-700 transition hover:text-primary-800 hover:underline"
-                  @click="openAuthModal('login')"
+                <UButton
+                  v-if="authMode === 'login'"
+                  block
+                  size="lg"
+                  color="primary"
+                  class="rounded-xl py-3 text-base font-semibold shadow-sm"
+                  :loading="authLoading"
+                  @click="login"
                 >
                   Sign in
-                </button>
-              </div>
-
-              <div v-else class="text-center text-slate-600">
-                Remember your password?
-                <button
-                  type="button"
-                  class="cursor-pointer font-medium text-primary-700 transition hover:text-primary-800 hover:underline"
-                  @click="openAuthModal('login')"
+                </UButton>
+                <UButton
+                  v-else-if="authMode === 'register'"
+                  block
+                  size="lg"
+                  color="primary"
+                  class="rounded-xl py-3 text-base font-semibold shadow-sm"
+                  :loading="authLoading"
+                  @click="register"
                 >
-                  Sign in
-                </button>
+                  Create account
+                </UButton>
+                <UButton
+                  v-else
+                  block
+                  size="lg"
+                  color="primary"
+                  class="rounded-xl py-3 text-base font-semibold shadow-sm"
+                  :loading="authLoading"
+                  @click="sendForgotPassword"
+                >
+                  Send reset link
+                </UButton>
+
+                <div class="mt-4 text-sm">
+                  <div v-if="authMode === 'login'" class="flex items-center justify-between gap-4">
+                    <button
+                      type="button"
+                      class="cursor-pointer font-medium text-primary-700 transition hover:text-primary-800 hover:underline"
+                      @click="openAuthModal('forgot')"
+                    >
+                      Forgot password?
+                    </button>
+                    <p class="text-slate-600">
+                      Don't have an account?
+                      <button
+                        type="button"
+                        class="cursor-pointer font-medium text-primary-700 transition hover:text-primary-800 hover:underline"
+                        @click="openAuthModal('register')"
+                      >
+                        Sign up
+                      </button>
+                    </p>
+                  </div>
+
+                  <div v-else-if="authMode === 'register'" class="text-center text-slate-600">
+                    Already have an account?
+                    <button
+                      type="button"
+                      class="cursor-pointer font-medium text-primary-700 transition hover:text-primary-800 hover:underline"
+                      @click="openAuthModal('login')"
+                    >
+                      Sign in
+                    </button>
+                  </div>
+
+                  <div v-else class="text-center text-slate-600">
+                    Remember your password?
+                    <button
+                      type="button"
+                      class="cursor-pointer font-medium text-primary-700 transition hover:text-primary-800 hover:underline"
+                      @click="openAuthModal('login')"
+                    >
+                      Sign in
+                    </button>
+                  </div>
+                </div>
               </div>
-            </div>
+            </Transition>
           </div>
         </div>
       </template>
@@ -752,6 +768,12 @@ const paymentAmountLabel = computed(() => {
   const currency = flow.config?.currency || 'KES'
   const amount = flow.config?.price_per_document ?? 100
   return `${currency} ${amount}`
+})
+
+const progressPercentage = computed(() => {
+  const raw = Number(flow.job?.progress ?? 0)
+  if (!Number.isFinite(raw)) return 0
+  return Math.max(0, Math.min(100, Math.round(raw)))
 })
 
 const flowPanelTitle = computed(() => {
@@ -938,6 +960,19 @@ function formatDate(value: string | null): string {
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return value
   return d.toLocaleString()
+}
+
+function formatEta(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined || Number.isNaN(Number(seconds))) {
+    return '--'
+  }
+
+  const total = Math.max(0, Math.floor(Number(seconds)))
+  const mins = Math.floor(total / 60)
+  const secs = total % 60
+
+  if (mins <= 0) return `${secs}s`
+  return `${mins}m ${secs}s`
 }
 
 function statusColor(status: string): 'success' | 'warning' | 'error' | 'primary' | 'neutral' {
@@ -1130,6 +1165,15 @@ async function submitUpload() {
   }
 
   uploading.value = true
+  goToProgressStep()
+  flow.setJob({
+    status: 'processing',
+    progress: 0,
+    processed_pages: 0,
+    total_pages: 0,
+    eta_seconds: null,
+    error_message: null,
+  })
 
   try {
     const form = new FormData()
@@ -1151,6 +1195,7 @@ async function submitUpload() {
     await fetchJobSnapshot(res.job_id)
   } catch (e: any) {
     panelError.value = e?.data?.message || 'Could not upload your PDF.'
+    goToPaymentStep()
   } finally {
     uploading.value = false
   }
@@ -1599,5 +1644,20 @@ async function downloadJobById(jobId: string, sourceFilename: string) {
 .panel-fade-enter-from,
 .panel-fade-leave-to {
   opacity: 0;
+}
+
+.auth-mode-enter-active,
+.auth-mode-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.auth-mode-enter-from {
+  opacity: 0;
+  transform: translateX(18px);
+}
+
+.auth-mode-leave-to {
+  opacity: 0;
+  transform: translateX(-18px);
 }
 </style>
