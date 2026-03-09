@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen app-shell text-slate-900">
-    <header class="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur">
+    <header class="sticky h-16 top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur">
       <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-10">
         <NuxtLink to="/" class="flex items-center gap-3">
           <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-sm font-bold text-white shadow-md shadow-primary-500/25">
@@ -77,7 +77,7 @@
 
       <section
         v-if="!showResetPassword"
-        class="mx-auto w-full max-w-7xl px-4 pb-16 pt-14 sm:px-6 lg:px-10"
+        class="bg-blue-500 mx-auto w-full max-w-7xl px-4 pb-16 pt-14 sm:px-6 lg:px-10"
       >
         <div class="mx-auto max-w-3xl text-center animate-fade-up">
           <p class="text-sm font-semibold uppercase tracking-[0.16em] text-primary-600">Tenth Lining</p>
@@ -186,286 +186,289 @@
             </div>
           </div>
         </div>
-      </section>
-    </main>
 
-    <USlideover
-      :open="flowPanelOpen"
-      side="right"
-      :title="flowPanelTitle"
-      class="!w-full sm:!max-w-xl"
-      @update:open="flowPanelOpen = $event"
-    >
-      <template #content>
-        <div class="flex h-full flex-col bg-white">
-          <div class="border-b border-slate-200 p-6 sm:p-8">
-            <div class="flex items-start justify-between gap-4">
-              <div>
-                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-primary-600">
-                  Step {{ stepNumber }} of 3
-                </p>
-                <h3 class="mt-1 text-xl font-semibold text-slate-900">{{ flowPanelHeadline }}</h3>
-              </div>
-              <UBadge
-                :color="flow.stage === 'download' ? 'success' : 'primary'"
-                variant="soft"
-                class="rounded-full px-3 py-1 text-xs font-semibold"
-              >
-                {{ flow.stage === 'download' ? 'Completed' : paymentConfirmed ? 'Payment confirmed' : 'Payment required' }}
-              </UBadge>
-            </div>
-
-            <div v-if="flow.selectedFile" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-              <div class="flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="truncate text-sm font-medium text-slate-800">{{ flow.selectedFile.name }}</p>
-                  <p class="mt-0.5 text-xs text-slate-500">{{ formatSize(flow.selectedFile.size) }}</p>
-                </div>
-                <UIcon name="i-heroicons-document-text" class="h-6 w-6 text-slate-500" />
-              </div>
-            </div>
-          </div>
-
-          <div class="flex-1 overflow-y-auto p-6 sm:p-8">
-            <Transition name="panel-slide" mode="out-in">
-              <div v-if="flowStep === 'config'" key="config" class="space-y-6">
-                <p class="text-sm leading-relaxed text-slate-600">
-                  Set how line numbers should appear on your PDF margins. Line interval is fixed at every 10 lines.
-                </p>
-
-                <UFormField label="Margin side">
-                  <URadioGroup
-                    v-model="flow.uploadOptions.margin"
-                    :items="marginItems"
-                    orientation="horizontal"
-                    variant="card"
-                    class="w-full"
-                  />
-                </UFormField>
-
-                <UFormField label="Font size">
-                  <USelect
-                    v-model="flow.uploadOptions.font_size_pt"
-                    :items="fontSizeItems"
-                    size="xl"
-                    class="w-full"
-                    placeholder="Choose font size"
-                  />
-                </UFormField>
-
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                  Amount due:
-                  <strong class="text-slate-900">{{ paymentAmountLabel }}</strong>
-                </div>
-              </div>
-
-              <div v-else-if="flowStep === 'payment'" key="payment" class="space-y-6">
-                <UButton variant="ghost" color="gray" size="sm" icon="i-heroicons-arrow-left" class="-ml-2" @click="goToConfigStep">
-                  Back to options
-                </UButton>
-
-                <UAlert
-                  color="info"
-                  icon="i-heroicons-device-phone-mobile"
-                  :title="paymentEnabled ? 'M-Pesa payment required' : 'Payment simulation mode'"
-                  :description="paymentEnabled
-                    ? 'Enter email and phone, then approve the STK prompt on your phone.'
-                    : 'Payments are currently disabled in settings. A successful payment will be simulated after ~5 seconds.'"
-                />
-
-                <div
-                  v-if="paymentAccountNotice"
-                  class="rounded-2xl border border-sky-200 bg-sky-50/90 px-4 py-3 text-sm text-sky-800"
-                >
-                  {{ paymentAccountNotice }}
-                </div>
-
-                <UFormField label="Email address">
-                  <UInput
-                    v-model="paymentEmail"
-                    type="email"
-                    size="lg"
-                    placeholder="you@example.com"
-                    class="w-full"
-                    :disabled="flow.paymentPolling || paymentConfirmed"
-                  />
-                </UFormField>
-
-                <UFormField label="M-Pesa phone number">
-                  <UInput
-                    v-model="paymentPhone"
-                    type="tel"
-                    size="lg"
-                    placeholder="254712345678 or 0712345678"
-                    class="w-full"
-                    :disabled="flow.paymentPolling || paymentConfirmed"
-                  />
-                </UFormField>
-
-                <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                  Amount payable:
-                  <strong class="text-slate-900">{{ paymentAmountLabel }}</strong>
-                </div>
-
-                <p v-if="paymentSimulationMode" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
-                  enable_payment is OFF. Successful payment is simulated after ~5 seconds.
-                </p>
-
-                <UAlert v-if="panelError" color="error" :title="panelError" />
-
-                <UButton
-                  v-if="!paymentConfirmed"
-                  block
-                  size="lg"
-                  color="primary"
-                  class="rounded-xl py-3 text-base font-semibold"
-                  :loading="flow.paymentPolling"
-                  :disabled="!paymentPhone.trim() || !paymentEmail.trim()"
-                  @click="initiatePayment"
-                >
-                  {{ flow.paymentPolling ? 'Waiting for payment confirmation...' : 'Pay with M-Pesa' }}
-                </UButton>
-
-                <div v-if="flow.paymentPolling" class="rounded-2xl border border-primary-200 bg-primary-50 p-4">
-                  <div class="flex items-center gap-3 text-primary-700">
-                    <UIcon name="i-heroicons-arrow-path" class="h-5 w-5 animate-spin" />
-                    <p class="text-sm font-medium">Awaiting customer payment...</p>
+        <USlideover
+          :overlay="false"
+          :open="flowPanelOpen"
+          side="right"
+          :title="flowPanelTitle"
+          class="!w-full sm:!max-w-xl top-16 right-0 fixed "
+          @update:open="flowPanelOpen = $event"
+        >
+          <template #content>
+            <div class="flex h-full flex-col bg-white">
+              <div class="border-b border-slate-200 p-6 sm:p-8">
+                <div class="flex items-start justify-between gap-4">
+                  <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-primary-600">
+                      Step {{ stepNumber }} of 3
+                    </p>
+                    <h3 class="mt-1 text-xl font-semibold text-slate-900">{{ flowPanelHeadline }}</h3>
                   </div>
-                  <p class="mt-2 text-sm text-primary-700/80">
-                    {{ paymentStatusMessage || 'Check your phone and complete the M-Pesa prompt.' }}
-                  </p>
+                  <UBadge
+                    :color="flow.stage === 'download' ? 'success' : 'primary'"
+                    variant="soft"
+                    class="rounded-full px-3 py-1 text-xs font-semibold"
+                  >
+                    {{ flow.stage === 'download' ? 'Completed' : paymentConfirmed ? 'Payment confirmed' : 'Payment required' }}
+                  </UBadge>
                 </div>
-
-                <div v-if="paymentConfirmed" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                  <div class="flex items-center gap-2 text-emerald-700">
-                    <UIcon name="i-heroicons-check-circle" class="h-5 w-5" />
-                    <p class="text-sm font-semibold">Payment confirmed</p>
-                  </div>
-                  <p class="mt-1 text-sm text-emerald-700/90">
-                    You can now start processing this document.
-                  </p>
-                </div>
-              </div>
-
-              <div v-else key="progress" class="space-y-6">
-                <UButton
-                  v-if="flow.stage !== 'processing'"
-                  variant="ghost"
-                  color="gray"
-                  size="sm"
-                  icon="i-heroicons-arrow-left"
-                  class="-ml-2"
-                  @click="goToPaymentStep"
-                >
-                  Back to payment
-                </UButton>
-
-                <div v-if="flow.stage === 'processing'" class="space-y-4">
-                  <UAlert
-                    color="info"
-                    icon="i-heroicons-sparkles"
-                    title="Your document is being processed"
-                    description=""
-                  />
-
-                  <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                    <div class="mb-3 flex items-center justify-between gap-3">
-                      <p class="text-sm font-semibold text-slate-900">Adding line numbers</p>
-                      <span class="text-sm font-semibold text-primary-700">{{ progressPercentage }}%</span>
+    
+                <div v-if="flow.selectedFile" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-medium text-slate-800">{{ flow.selectedFile.name }}</p>
+                      <p class="mt-0.5 text-xs text-slate-500">{{ formatSize(flow.selectedFile.size) }}</p>
                     </div>
-                    <UProgress :model-value="progressPercentage" :max="100" size="xl" />
-                    <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
-                      <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200">
-                        Page {{ flow.job?.processed_pages ?? 0 }} / {{ flow.job?.total_pages ?? 0 }}
-                      </span>
-                      <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200" v-if="flow.job?.eta_seconds !== null">
-                        ETA {{ formatEta(flow.job?.eta_seconds) }}
-                      </span>
-                      <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200" v-else>
-                        ETA calculating...
-                      </span>
+                    <UIcon name="i-heroicons-document-text" class="h-6 w-6 text-slate-500" />
+                  </div>
+                </div>
+              </div>
+    
+              <div class="flex-1 overflow-y-auto p-6 sm:p-8">
+                <Transition name="panel-slide" mode="out-in">
+                  <div v-if="flowStep === 'config'" key="config" class="space-y-6">
+                    <p class="text-sm leading-relaxed text-slate-600">
+                      Set how line numbers should appear on your PDF margins. Line interval is fixed at every 10 lines.
+                    </p>
+    
+                    <UFormField label="Margin side">
+                      <URadioGroup
+                        v-model="flow.uploadOptions.margin"
+                        :items="marginItems"
+                        orientation="horizontal"
+                        variant="card"
+                        class="w-full"
+                      />
+                    </UFormField>
+    
+                    <UFormField label="Font size">
+                      <USelect
+                        v-model="flow.uploadOptions.font_size_pt"
+                        :items="fontSizeItems"
+                        size="xl"
+                        class="w-full"
+                        placeholder="Choose font size"
+                      />
+                    </UFormField>
+    
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                      Amount due:
+                      <strong class="text-slate-900">{{ paymentAmountLabel }}</strong>
                     </div>
                   </div>
-                </div>
-
-                <div v-else-if="flow.stage === 'download'" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
-                  <UIcon name="i-heroicons-check-circle" class="mx-auto h-12 w-12 text-emerald-600" />
-                  <p class="mt-3 text-lg font-semibold text-slate-900">Document ready</p>
-                  <p class="mt-1 text-sm text-slate-600">Download your PDF or process another document.</p>
-
-                  <div class="mt-5 flex flex-col gap-3">
+    
+                  <div v-else-if="flowStep === 'payment'" key="payment" class="space-y-6">
+                    <UButton variant="ghost" color="gray" size="sm" icon="i-heroicons-arrow-left" class="-ml-2" @click="goToConfigStep">
+                      Back to options
+                    </UButton>
+    
+                    <UAlert
+                      color="info"
+                      icon="i-heroicons-device-phone-mobile"
+                      :title="paymentEnabled ? 'M-Pesa payment required' : 'Payment simulation mode'"
+                      :description="paymentEnabled
+                        ? 'Enter email and phone, then approve the STK prompt on your phone.'
+                        : 'Payments are currently disabled in settings. A successful payment will be simulated after ~5 seconds.'"
+                    />
+    
+                    <div
+                      v-if="paymentAccountNotice"
+                      class="rounded-2xl border border-sky-200 bg-sky-50/90 px-4 py-3 text-sm text-sky-800"
+                    >
+                      {{ paymentAccountNotice }}
+                    </div>
+    
+                    <UFormField label="Email address">
+                      <UInput
+                        v-model="paymentEmail"
+                        type="email"
+                        size="lg"
+                        placeholder="you@example.com"
+                        class="w-full"
+                        :disabled="flow.paymentPolling || paymentConfirmed"
+                      />
+                    </UFormField>
+    
+                    <UFormField label="M-Pesa phone number">
+                      <UInput
+                        v-model="paymentPhone"
+                        type="tel"
+                        size="lg"
+                        placeholder="254712345678 or 0712345678"
+                        class="w-full"
+                        :disabled="flow.paymentPolling || paymentConfirmed"
+                      />
+                    </UFormField>
+    
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                      Amount payable:
+                      <strong class="text-slate-900">{{ paymentAmountLabel }}</strong>
+                    </div>
+    
+                    <p v-if="paymentSimulationMode" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                      enable_payment is OFF. Successful payment is simulated after ~5 seconds.
+                    </p>
+    
+                    <UAlert v-if="panelError" color="error" :title="panelError" />
+    
                     <UButton
+                      v-if="!paymentConfirmed"
+                      block
                       size="lg"
                       color="primary"
-                      class="rounded-xl"
-                      :loading="downloadingCurrentJob"
-                      @click="downloadCurrentJob"
+                      class="rounded-xl py-3 text-base font-semibold"
+                      :loading="flow.paymentPolling"
+                      :disabled="!paymentPhone.trim() || !paymentEmail.trim()"
+                      @click="initiatePayment"
                     >
-                      Download PDF
+                      {{ flow.paymentPolling ? 'Waiting for payment confirmation...' : 'Pay with M-Pesa' }}
                     </UButton>
-                    <UButton size="lg" variant="soft" color="primary" class="rounded-xl" @click="resetForAnother">
-                      Process another
+    
+                    <div v-if="flow.paymentPolling" class="rounded-2xl border border-primary-200 bg-primary-50 p-4">
+                      <div class="flex items-center gap-3 text-primary-700">
+                        <UIcon name="i-heroicons-arrow-path" class="h-5 w-5 animate-spin" />
+                        <p class="text-sm font-medium">Awaiting customer payment...</p>
+                      </div>
+                      <p class="mt-2 text-sm text-primary-700/80">
+                        {{ paymentStatusMessage || 'Check your phone and complete the M-Pesa prompt.' }}
+                      </p>
+                    </div>
+    
+                    <div v-if="paymentConfirmed" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                      <div class="flex items-center gap-2 text-emerald-700">
+                        <UIcon name="i-heroicons-check-circle" class="h-5 w-5" />
+                        <p class="text-sm font-semibold">Payment confirmed</p>
+                      </div>
+                      <p class="mt-1 text-sm text-emerald-700/90">
+                        You can now start processing this document.
+                      </p>
+                    </div>
+                  </div>
+    
+                  <div v-else key="progress" class="space-y-6">
+                    <UButton
+                      v-if="flow.stage !== 'processing'"
+                      variant="ghost"
+                      color="gray"
+                      size="sm"
+                      icon="i-heroicons-arrow-left"
+                      class="-ml-2"
+                      @click="goToPaymentStep"
+                    >
+                      Back to payment
+                    </UButton>
+    
+                    <div v-if="flow.stage === 'processing'" class="space-y-4">
+                      <UAlert
+                        color="info"
+                        icon="i-heroicons-sparkles"
+                        title="Your document is being processed"
+                        description=""
+                      />
+    
+                      <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                        <div class="mb-3 flex items-center justify-between gap-3">
+                          <p class="text-sm font-semibold text-slate-900">Adding line numbers</p>
+                          <span class="text-sm font-semibold text-primary-700">{{ progressPercentage }}%</span>
+                        </div>
+                        <UProgress :model-value="progressPercentage" :max="100" size="xl" />
+                        <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+                          <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200">
+                            Page {{ flow.job?.processed_pages ?? 0 }} / {{ flow.job?.total_pages ?? 0 }}
+                          </span>
+                          <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200" v-if="flow.job?.eta_seconds !== null">
+                            ETA {{ formatEta(flow.job?.eta_seconds) }}
+                          </span>
+                          <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200" v-else>
+                            ETA calculating...
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+    
+                    <div v-else-if="flow.stage === 'download'" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+                      <UIcon name="i-heroicons-check-circle" class="mx-auto h-12 w-12 text-emerald-600" />
+                      <p class="mt-3 text-lg font-semibold text-slate-900">Document ready</p>
+                      <p class="mt-1 text-sm text-slate-600">Download your PDF or process another document.</p>
+    
+                      <div class="mt-5 flex flex-col gap-3">
+                        <UButton
+                          size="lg"
+                          color="primary"
+                          class="rounded-xl"
+                          :loading="downloadingCurrentJob"
+                          @click="downloadCurrentJob"
+                        >
+                          Download PDF
+                        </UButton>
+                        <UButton size="lg" variant="soft" color="primary" class="rounded-xl" @click="resetForAnother">
+                          Process another
+                        </UButton>
+                      </div>
+                    </div>
+    
+                    <div v-else-if="flow.stage === 'error'" class="space-y-4">
+                      <UAlert color="error" :title="flow.error || 'Processing failed.'" />
+                      <UButton size="lg" variant="soft" color="primary" class="rounded-xl" @click="goToPaymentStep">
+                        Back to payment
+                      </UButton>
+                    </div>
+    
+                    <div v-else class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
+                      Start processing to see realtime progress here.
+                    </div>
+                  </div>
+                </Transition>
+              </div>
+    
+              <div class="border-t border-slate-200 bg-white p-6 sm:p-8">
+                <Transition name="panel-fade" mode="out-in">
+                  <div v-if="flowStep === 'config'" key="config-footer" class="space-y-3">
+                    <UButton block size="lg" color="primary" class="rounded-xl py-3 text-base font-semibold" @click="goToPaymentStep">
+                      Next: Payment
                     </UButton>
                   </div>
-                </div>
-
-                <div v-else-if="flow.stage === 'error'" class="space-y-4">
-                  <UAlert color="error" :title="flow.error || 'Processing failed.'" />
-                  <UButton size="lg" variant="soft" color="primary" class="rounded-xl" @click="goToPaymentStep">
-                    Back to payment
-                  </UButton>
-                </div>
-
-                <div v-else class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
-                  Start processing to see realtime progress here.
-                </div>
+    
+                  <div v-else-if="flowStep === 'payment'" key="payment-footer" class="space-y-3">
+                    <UButton
+                      block
+                      size="lg"
+                      color="primary"
+                      class="rounded-xl py-3 text-base font-semibold"
+                      :loading="uploading"
+                      :disabled="!paymentConfirmed || uploading"
+                      @click="submitUpload"
+                    >
+                      {{ uploading ? 'Preparing upload...' : 'Start Tenth Lining' }}
+                    </UButton>
+                    <p class="text-center text-xs text-slate-500">
+                      We only start processing after confirmed payment.
+                    </p>
+                  </div>
+    
+                  <div v-else key="progress-footer" class="space-y-3">
+                    <UButton
+                      block
+                      size="lg"
+                      color="primary"
+                      variant="soft"
+                      class="rounded-xl py-3 text-base font-semibold"
+                      :disabled="flow.stage === 'processing'"
+                      @click="openHistory"
+                    >
+                      View my previous jobs
+                    </UButton>
+                  </div>
+                </Transition>
               </div>
-            </Transition>
-          </div>
+            </div>
+          </template>
+        </USlideover>
+      </section>
+      
+    </main>
 
-          <div class="border-t border-slate-200 bg-white p-6 sm:p-8">
-            <Transition name="panel-fade" mode="out-in">
-              <div v-if="flowStep === 'config'" key="config-footer" class="space-y-3">
-                <UButton block size="lg" color="primary" class="rounded-xl py-3 text-base font-semibold" @click="goToPaymentStep">
-                  Next: Payment
-                </UButton>
-              </div>
-
-              <div v-else-if="flowStep === 'payment'" key="payment-footer" class="space-y-3">
-                <UButton
-                  block
-                  size="lg"
-                  color="primary"
-                  class="rounded-xl py-3 text-base font-semibold"
-                  :loading="uploading"
-                  :disabled="!paymentConfirmed || uploading"
-                  @click="submitUpload"
-                >
-                  {{ uploading ? 'Preparing upload...' : 'Start Tenth Lining' }}
-                </UButton>
-                <p class="text-center text-xs text-slate-500">
-                  We only start processing after confirmed payment.
-                </p>
-              </div>
-
-              <div v-else key="progress-footer" class="space-y-3">
-                <UButton
-                  block
-                  size="lg"
-                  color="primary"
-                  variant="soft"
-                  class="rounded-xl py-3 text-base font-semibold"
-                  :disabled="flow.stage === 'processing'"
-                  @click="openHistory"
-                >
-                  View my previous jobs
-                </UButton>
-              </div>
-            </Transition>
-          </div>
-        </div>
-      </template>
-    </USlideover>
 
     <UModal :open="authModalOpen" @update:open="authModalOpen = $event">
       <template #content>
