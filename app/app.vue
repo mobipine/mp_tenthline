@@ -124,9 +124,9 @@
                     <UButton color="primary" class="rounded-xl px-5 font-semibold" @click="openFlowPanel('config')">
                       Open setup panel
                     </UButton>
-                    <UButton variant="soft" color="primary" class="rounded-xl px-5 font-semibold" @click="openFlowPanel('payment')">
+                    <!-- <UButton variant="soft" color="primary" class="rounded-xl px-5 font-semibold" @click="openFlowPanel('payment')">
                       Go to payment
-                    </UButton>
+                    </UButton> -->
                     <UButton variant="ghost" color="gray" class="rounded-xl px-5" @click="clearFile">
                       Remove file
                     </UButton>

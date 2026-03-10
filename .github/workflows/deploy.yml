@@ -1,0 +1,75 @@
+name: Deploy TenthLine Frontend
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-tenthline-frontend
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Deploy frontend to VPS
+        env:
+          SSH_PASSWORD: ${{ secrets.SSH_PASSWORD }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${SSH_PASSWORD:-}" ]; then
+            echo "Missing required secret: SSH_PASSWORD"
+            exit 1
+          fi
+
+          SSH_HOST="${SSH_HOST:-62.171.180.182}"
+          SSH_USER="${SSH_USER:-root}"
+          SSH_PORT="${SSH_PORT:-22}"
+
+          sshpass -p "${SSH_PASSWORD}" ssh -p "${SSH_PORT}" -o StrictHostKeyChecking=no "${SSH_USER}@${SSH_HOST}" << 'EOF'
+            set -euo pipefail
+
+            cd /var/www/tenthline
+
+            git fetch --all --prune
+            git pull --ff-only origin main
+
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install
+            fi
+
+            npm run build
+
+            if command -v pm2 >/dev/null 2>&1; then
+              if pm2 describe tenthline >/dev/null 2>&1; then
+                pm2 reload tenthline --update-env
+              else
+                pm2 start .output/server/index.mjs --name tenthline
+              fi
+              pm2 save
+            elif command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files | grep -q '^tenthline\.service'; then
+              systemctl restart tenthline.service
+            else
+              echo "No PM2 process or systemd unit found for frontend restart."
+            fi
+
+            echo "✅Frontend deployment complete."
+          EOF
