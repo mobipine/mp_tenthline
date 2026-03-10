@@ -189,13 +189,11 @@
                   <h3 class="mt-1 text-xl font-semibold text-slate-900">{{ flowPanelHeadline }}</h3>
                 </div>
                 <div class="flex items-center gap-2">
-                  <UBadge
-                    :color="flow.stage === 'download' ? 'success' : 'primary'"
-                    variant="soft"
-                    class="rounded-full flex justify-center items-center text-xs font-semibold min-w-[150px] "
+                  <span
+                    class="inline-flex min-w-[150px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700"
                   >
                     {{ flow.stage === 'download' ? 'Completed' : paymentConfirmed ? 'Payment confirmed' : 'Payment required' }}
-                  </UBadge>
+                  </span>
                   <!-- Close button -->
                   <button
                     class="ml-1 inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
@@ -273,13 +271,18 @@
                     icon="i-heroicons-arrow-path"
                     title="Reading PDF pages..."
                   />
-                  <UAlert
+                  <div
                     v-else-if="paymentPageCount > 0"
-                    color="success"
-                    icon="i-heroicons-check-circle"
-                    :title="`${paymentPageCount} pages detected`"
-                    :description="`We'll charge based on ${paymentPageCount} pages.`"
-                  />
+                    class="rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-primary-800"
+                  >
+                    <div class="flex items-start gap-2">
+                      <UIcon name="i-heroicons-check-circle" class="mt-0.5 h-5 w-5 text-primary-600" />
+                      <div>
+                        <p class="text-sm font-semibold">{{ paymentPageCount }} pages detected</p>
+                        <p class="text-sm text-primary-700/90">We'll charge based on {{ paymentPageCount }} pages.</p>
+                      </div>
+                    </div>
+                  </div>
                   <div v-else class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                     Select a PDF to compute page count and pricing.
                   </div>
@@ -341,12 +344,12 @@
                       {{ paymentStatusMessage || 'Check your phone and complete the M-Pesa prompt.' }}
                     </p>
                   </div>
-                  <div v-if="paymentConfirmed" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
-                    <div class="flex items-center gap-2 text-emerald-700">
+                  <div v-if="paymentConfirmed" class="rounded-2xl border border-primary-200 bg-primary-50 p-4">
+                    <div class="flex items-center gap-2 text-primary-700">
                       <UIcon name="i-heroicons-check-circle" class="h-5 w-5" />
                       <p class="text-sm font-semibold">Payment confirmed</p>
                     </div>
-                    <p class="mt-1 text-sm text-emerald-700/90">
+                    <p class="mt-1 text-sm text-primary-700/90">
                       Payment received. Starting document processing automatically...
                     </p>
                   </div>
@@ -391,8 +394,8 @@
                       </div>
                     </div>
                   </div>
-                  <div v-else-if="flow.stage === 'download'" class="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
-                    <UIcon name="i-heroicons-check-circle" class="mx-auto h-12 w-12 text-emerald-600" />
+                  <div v-else-if="flow.stage === 'download'" class="rounded-2xl border border-primary-200 bg-primary-50 p-6 text-center">
+                    <UIcon name="i-heroicons-check-circle" class="mx-auto h-12 w-12 text-primary-600" />
                     <p class="mt-3 text-lg font-semibold text-slate-900">Document ready</p>
                     <p class="mt-1 text-sm text-slate-600">Download your PDF or process another document.</p>
                     <div class="mt-5 flex flex-col gap-3">
@@ -507,7 +510,7 @@
               <div :key="`${authMode}-${authStep}`" class="space-y-4">
                 <div
                   v-if="authMessage"
-                  class="rounded-xl border border-emerald-200 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-800"
+                  class="rounded-xl border border-primary-200 bg-primary-50/90 px-4 py-3 text-sm text-primary-800"
                 >
                   {{ authMessage }}
                 </div>
@@ -635,9 +638,12 @@
                     <p class="text-sm font-semibold text-slate-900">{{ job.filename }}</p>
                     <p class="mt-1 text-xs text-slate-500">{{ formatDate(job.created_at) }}</p>
                   </div>
-                  <UBadge :color="statusColor(job.status)" variant="soft">
+                  <span
+                    class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium capitalize"
+                    :class="statusBadgeClass(job.status)"
+                  >
                     {{ job.status }}
-                  </UBadge>
+                  </span>
                 </div>
 
                 <p class="mt-2 text-xs text-slate-600">
@@ -1002,12 +1008,12 @@ function formatEta(seconds: number | null | undefined): string {
   return `${mins}m ${secs}s`
 }
 
-function statusColor(status: string): 'success' | 'warning' | 'error' | 'primary' | 'neutral' {
-  if (status === 'completed') return 'success'
-  if (status === 'failed') return 'error'
-  if (status === 'deleted') return 'neutral'
-  if (status === 'processing') return 'warning'
-  return 'primary'
+function statusBadgeClass(status: string): string {
+  if (status === 'completed') return 'border-primary-200 bg-primary-50 text-primary-800'
+  if (status === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700'
+  if (status === 'deleted') return 'border-slate-200 bg-slate-100 text-slate-700'
+  if (status === 'processing') return 'border-amber-200 bg-amber-50 text-amber-700'
+  return 'border-primary-200 bg-primary-50 text-primary-800'
 }
 
 function openFlowPanel(step: 'config' | 'payment' | 'progress') {
