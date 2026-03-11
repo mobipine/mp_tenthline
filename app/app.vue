@@ -63,7 +63,7 @@
             
             <p class="text-sm font-semibold uppercase tracking-[0.16em] text-primary-600">Tenth Lining</p>
             <h1 class="mt-4 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-              Tenth Lining - Automatically apply tenth-line referencing to legal PDFs.
+              Automatically apply tenth-line referencing to legal PDFs.
             </h1>
             <p class="mx-auto mt-4 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
               Upload one PDF, configure numbering, complete payment, and download your file from the same flow.
@@ -656,7 +656,7 @@
 
 <script setup lang="ts">
 useHead({
-  title: 'Tenth Lining - Automatically apply tenth-line referencing to legal PDFs.'
+  title: 'Automatically apply tenth-line referencing to legal PDFs.'
 })
 
 import { useFlowStore, type AppConfig } from '~/stores/flow'
