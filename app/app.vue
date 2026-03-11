@@ -1,14 +1,20 @@
 <template>
-  <div class="min-h-screen app-shell text-slate-900">
+  <div class="min-h-screen  text-slate-900">
     <header class="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur">
-      <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-10">
-        <NuxtLink to="/" class="flex items-center gap-3">
+    <!-- <header class="sticky top-0 z-40 border-b border-slate-200/90 bg-transparent/95 backdrop-blur"> -->
+      <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-10 ">
+        <NuxtLink to="/" class="flex items-center gap-3 h-full">
           <!-- <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-sm font-bold text-white shadow-md shadow-primary-500/25">
             10
           </span> -->
-          <div class="leading-tight">
+          <div class="leading-tight h-full">
             <!-- <p class="text-sm lg:text-[16px] font-semibold tracking-tight text-slate-900">LegalLine</p> -->
-            <p class="text-sm lg:text-[16px] font-medium uppercase tracking-[0.12em] text-slate-500">Tenth Lining</p>
+            <!-- <p class="text-sm lg:text-[16px] font-medium uppercase tracking-[0.12em] text-slate-500">Tenth Lining</p> -->
+             <img
+              :src="brandLogo"
+              alt="Tenth Lining logo"
+              class="pointer-events-none  h-full"
+            >
           </div>
         </NuxtLink>
 
@@ -41,8 +47,8 @@
     <main class="relative h-[calc(100vh-60px)] overflow-hidden">
     <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10">
       <div class="ambient-lines" />
-      <div class="ambient-orb ambient-orb-a" />
-      <div class="ambient-orb ambient-orb-b" />
+      <!-- <div class="ambient-orb ambient-orb-a" />
+      <div class="ambient-orb ambient-orb-b" /> -->
     </div>
 
     <div class="flex h-full flex-col overflow-hidden">
@@ -53,7 +59,8 @@
         <section
           class="min-w-0 flex-1 overflow-y-auto px-4 pb-16 pt-10 sm:px-6 sm:pt-12 lg:px-10 lg:pt-14 transition-[max-width,padding] duration-300 ease-out"
         >
-          <div class="mx-auto max-w-3xl text-center animate-fade-up" :class="flowPanelOpen ? 'max-w-full' : 'max-w-3xl'">
+          <div class="relative mx-auto max-w-3xl text-center animate-fade-up" :class="flowPanelOpen ? 'max-w-full' : 'max-w-3xl'">
+            
             <p class="text-sm font-semibold uppercase tracking-[0.16em] text-primary-600">Tenth Lining</p>
             <h1 class="mt-4 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
               Add tenth line to your legal PDF documents instantly
@@ -118,7 +125,7 @@
                 </div>
                 <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
                   <p class="text-sm leading-relaxed text-slate-600">
-                    Continue in the right panel to configure options, pay, and track realtime progress.
+                    Continue in the right panel to pay and track realtime progress.
                   </p>
                   <div class="mt-4 flex flex-wrap gap-3">
                     <UButton color="primary" class="rounded-xl px-5 font-semibold" @click="openFlowPanel('config')">
@@ -140,7 +147,7 @@
               <ol class="mt-4 space-y-4 text-sm text-slate-600">
                 <li class="flex gap-3">
                   <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">1</span>
-                  <span>Set margin, line interval (5th/10th), and font size.</span>
+                  <span>Review page count and price, then pay with M-Pesa.</span>
                 </li>
                 <li class="flex gap-3">
                   <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">2</span>
@@ -218,38 +225,11 @@
             <!-- Panel Body -->
             <div class="flex-1 overflow-y-auto p-6 sm:p-8">
               <Transition name="panel-slide" mode="out-in">
-                <!-- Step 1: Config -->
+                <!-- Step 1: Config (options fixed: right margin, font 8pt; line interval from domain) -->
                 <div v-if="flowStep === 'config'" key="config" class="space-y-6">
                   <p class="text-sm leading-relaxed text-slate-600">
-                    Set how line numbers should appear on your PDF margins.
+                    Line numbers are added on the right margin. Review the quote below and proceed to payment.
                   </p>
-                  <UFormField label="Margin side">
-                    <URadioGroup
-                      v-model="flow.uploadOptions.margin"
-                      :items="marginItems"
-                      orientation="horizontal"
-                      variant="card"
-                      class="w-full"
-                    />
-                  </UFormField>
-                  <UFormField label="Line interval">
-                    <URadioGroup
-                      v-model="flow.uploadOptions.line_interval"
-                      :items="lineIntervalItems"
-                      orientation="horizontal"
-                      variant="card"
-                      class="w-full"
-                    />
-                  </UFormField>
-                  <UFormField label="Font size">
-                    <USelect
-                      v-model="flow.uploadOptions.font_size_pt"
-                      :items="fontSizeItems"
-                      size="xl"
-                      class="w-full"
-                      placeholder="Choose font size"
-                    />
-                  </UFormField>
                   <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 space-y-1.5">
                     <p>
                       Pages detected:
@@ -677,6 +657,7 @@
 <script setup lang="ts">
 import { useFlowStore, type AppConfig } from '~/stores/flow'
 import { useAuthStore, type AuthUser } from '~/stores/auth'
+import brandLogo from '~/assets/images/3.png'
 
 interface JobPayload {
   id: string
@@ -747,22 +728,6 @@ const historyDownloadingJobId = ref<string | null>(null)
 const PAYMENT_POLL_INTERVAL_MS = 2000
 const PAYMENT_POLL_TIMEOUT_MS = 8 * 60 * 1000
 
-const marginItems = [
-  { label: 'Left margin', value: 'left' },
-  { label: 'Right margin', value: 'right' },
-]
-
-const lineIntervalItems = [
-  { label: 'Every 10th line', value: 10 },
-  { label: 'Every 5th line', value: 5 },
-]
-
-const fontSizeItems = [
-  { label: '8 pt', value: 8 },
-  { label: '9 pt', value: 9 },
-  { label: '10 pt', value: 10 },
-]
-
 let paymentPollInterval: ReturnType<typeof setInterval> | null = null
 let paymentPollStartedAt = 0
 let jobPollInterval: ReturnType<typeof setInterval> | null = null
@@ -774,12 +739,12 @@ const paymentEnabled = computed(() => flow.config?.enable_payment !== false)
 const paymentSimulationMode = computed(() => !paymentEnabled.value)
 const paymentAmountLabel = computed(() => {
   const currency = flow.config?.currency || 'KES'
-  const amount = paymentAmount.value > 0 ? paymentAmount.value : paymentUnitPrice.value > 0 ? paymentUnitPrice.value : (flow.config?.price_per_page ?? 100)
+  const amount = paymentAmount.value > 0 ? paymentAmount.value : paymentUnitPrice.value > 0 ? paymentUnitPrice.value : (flow.config?.price_per_page ?? 5)
   return `${currency} ${amount.toFixed(2)}`
 })
 const paymentUnitPriceLabel = computed(() => {
   const currency = flow.config?.currency || 'KES'
-  const unitPrice = paymentUnitPrice.value > 0 ? paymentUnitPrice.value : (flow.config?.price_per_page ?? 100)
+  const unitPrice = paymentUnitPrice.value > 0 ? paymentUnitPrice.value : (flow.config?.price_per_page ?? 5)
   return `${currency} ${unitPrice.toFixed(2)}`
 })
 
@@ -790,7 +755,7 @@ const progressPercentage = computed(() => {
 })
 
 const flowPanelHeadline = computed(() => {
-  if (flowStep.value === 'config') return 'Choose your numbering style'
+  if (flowStep.value === 'config') return 'Review quote and pay'
   if (flowStep.value === 'payment') return 'Confirm payment details'
   if (flow.stage === 'download') return 'Download your processed PDF'
   if (flow.stage === 'error') return 'Processing error'
@@ -814,6 +779,12 @@ const authSubtitle = computed(() => {
 
 const apiBase = () => String(config.public.apiBase || 'http://localhost:8000').replace(/\/$/, '')
 
+function getLineIntervalFromDomain(): 5 | 10 {
+  if (typeof window === 'undefined') return 10
+  const host = window.location.hostname.toLowerCase()
+  return (host === '5thlining.com' || host === 'www.5thlining.com') ? 5 : 10
+}
+
 watch(
   () => flow.selectedFile,
   async (file) => {
@@ -828,6 +799,7 @@ watch(
       return
     }
 
+    flow.setUploadOptions({ line_interval: getLineIntervalFromDomain() })
     flowPanelOpen.value = true
     flowStep.value = 'config'
     flow.stage = 'config'
@@ -841,8 +813,22 @@ watch(
 
 watch(
   () => auth.user,
-  (user) => {
+  async (user, previousUser) => {
     hydratePaymentContactFromUser(user)
+
+    if (previousUser === undefined || !flow.selectedFile) return
+    if (isSameAuthUser(user, previousUser)) return
+
+    const previousUnitPrice = paymentUnitPrice.value
+    const previousAmount = paymentAmount.value
+
+    await fetchPaymentQuote(flow.selectedFile)
+    if (quoteError.value) return
+
+    if (hasQuotePricingChanged(previousUnitPrice, previousAmount) && user) {
+      const currency = flow.config?.currency || 'KES'
+      paymentAccountNotice.value = `Signed in pricing applied: ${currency} ${paymentUnitPrice.value.toFixed(2)} per page. Updated total: ${currency} ${paymentAmount.value.toFixed(2)}.`
+    }
   },
   { immediate: true }
 )
@@ -851,17 +837,21 @@ onMounted(async () => {
   auth.restore()
 
   try {
-    const res = await $fetch<AppConfig>(`${apiBase()}/api/config`)
+    const res = await $fetch<AppConfig>(`${apiBase()}/api/config`, {
+      headers: authHeaders(),
+    })
     flow.setConfig(res)
   } catch {
     flow.setConfig({
       enable_payment: true,
-      price_per_page: 100,
+      price_per_page: 5,
       currency: 'KES',
       max_file_size_mb: 500,
       max_pages: 3000,
     })
   }
+
+  flow.setUploadOptions({ line_interval: getLineIntervalFromDomain() })
 
   if (auth.token) {
     try {
@@ -980,6 +970,18 @@ async function fetchPaymentQuote(file: File) {
   } finally {
     quoteLoading.value = false
   }
+}
+
+function isSameAuthUser(a: AuthUser | null | undefined, b: AuthUser | null | undefined): boolean {
+  if (!a && !b) return true
+  if (!a || !b) return false
+  return a.id === b.id && a.email === b.email
+}
+
+function hasQuotePricingChanged(previousUnitPrice: number, previousAmount: number): boolean {
+  const EPSILON = 0.0001
+  return Math.abs(paymentUnitPrice.value - previousUnitPrice) > EPSILON
+    || Math.abs(paymentAmount.value - previousAmount) > EPSILON
 }
 
 function formatSize(bytes: number): string {
@@ -1492,6 +1494,19 @@ async function downloadHistoryJob(job: HistoryJob) {
   }
 }
 
+function buildDownloadFilename(originalFilename: string): string {
+  const base = originalFilename.replace(/\.pdf$/i, '') || 'document'
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = String(now.getMonth() + 1).padStart(2, '0')
+  const d = String(now.getDate()).padStart(2, '0')
+  const h = String(now.getHours()).padStart(2, '0')
+  const min = String(now.getMinutes()).padStart(2, '0')
+  const s = String(now.getSeconds()).padStart(2, '0')
+  const timestamp = `${y}-${m}-${d}_${h}${min}${s}`
+  return `tenthlining.ai_${timestamp}_${base}.pdf`
+}
+
 async function downloadJobById(jobId: string, sourceFilename: string) {
   if (!auth.token) {
     openAuthModal('login')
@@ -1509,7 +1524,7 @@ async function downloadJobById(jobId: string, sourceFilename: string) {
     const objectUrl = URL.createObjectURL(blob)
     const anchor = document.createElement('a')
     anchor.href = objectUrl
-    anchor.download = `numbered-${sourceFilename}`
+    anchor.download = buildDownloadFilename(sourceFilename)
     document.body.appendChild(anchor)
     anchor.click()
     anchor.remove()
@@ -1522,11 +1537,17 @@ async function downloadJobById(jobId: string, sourceFilename: string) {
 
 <style scoped>
 
-.app-shell {
+/* .app-shell {
   background:
-    radial-gradient(1000px 500px at 90% -15%, rgba(180, 127, 84, 0.15), transparent 62%),
-    radial-gradient(800px 420px at -8% 105%, rgba(111, 75, 49, 0.12), transparent 60%),
-    linear-gradient(180deg, #f7fbff 0%, #eef2f7 100%);
+    radial-gradient(1000px 520px at 90% -18%, rgba(216, 201, 150, 0.28), transparent 64%),
+    radial-gradient(820px 440px at -8% 108%, rgba(32, 40, 72, 0.16), transparent 62%),
+    linear-gradient(180deg, #fcf9ef 0%, #f5edd7 100%);
+} */
+
+.app-shell {
+  /* background:
+    radial-gradient(1000px 520px at 90% -18%, rgba(216, 201, 150, 0.28), transparent 64%),
+    radial-gradient(820px 440px at -8% 108%, rgba(32, 40, 72, 0.16), transparent 62%), */
 }
 
 .dropzone-card {
@@ -1538,25 +1559,25 @@ async function downloadJobById(jobId: string, sourceFilename: string) {
 
 .dropzone-card:hover {
   transform: translateY(-2px);
-  border-color: #b47f54;
-  box-shadow: 0 40px 80px -50px rgba(139, 94, 60, 0.4);
+  border-color: #202848;
+  box-shadow: 0 42px 84px -52px rgba(32, 40, 72, 0.42);
 }
 
 .dropzone-card.dragging {
-  border-color: #8b5e3c;
-  background: rgba(248, 243, 239, 0.94);
+  border-color: #202848;
+  background: rgba(252, 249, 239, 0.94);
   transform: translateY(-2px) scale(1.002);
 }
 
 .ambient-lines {
   position: absolute;
   inset: 0;
-  opacity: 0.3;
+  opacity: 0.32;
   background-image:
-    linear-gradient(to right, rgba(139, 94, 60, 0.14) 1px, transparent 1px),
-    linear-gradient(to right, rgba(148, 120, 96, 0.08) 1px, transparent 1px);
+    linear-gradient(to right, rgba(32, 40, 72, 0.16) 1px, transparent 1px),
+    linear-gradient(to right, rgba(216, 201, 150, 0.2) 1px, transparent 1px);
   background-size: 72px 100%, 18px 100%;
-  animation: move-lines 18s linear infinite;
+  animation: move-lines 1s linear infinite;
 }
 
 .ambient-orb {
@@ -1571,14 +1592,14 @@ async function downloadJobById(jobId: string, sourceFilename: string) {
 .ambient-orb-a {
   top: 8%;
   left: -120px;
-  background: rgba(196, 153, 118, 0.45);
+  background: rgba(216, 201, 150, 0.5);
   animation: float-orb-a 8s ease-in-out infinite;
 }
 
 .ambient-orb-b {
   right: -100px;
   bottom: 2%;
-  background: rgba(139, 94, 60, 0.35);
+  background: rgba(32, 40, 72, 0.26);
   animation: float-orb-b 10s ease-in-out infinite;
 }
 

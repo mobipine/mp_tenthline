@@ -34,7 +34,7 @@ export const useFlowStore = defineStore('flow', {
       download_url?: string
     } | null,
     uploadOptions: {
-      margin: 'left' as 'left' | 'right',
+      margin: 'right' as const,
       line_interval: 10 as 5 | 10,
       font_size_pt: 8,
     },
@@ -84,7 +84,7 @@ export const useFlowStore = defineStore('flow', {
       this.job = null
       this.error = null
       this.uploadOptions = {
-        margin: 'left',
+        margin: 'right',
         line_interval: 10,
         font_size_pt: 8,
       }

@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
   app: {
     head: {
-      title: 'LegalLine — Add line numbers to legal PDFs',
+      title: 'Tenth Lining - Automatically apply tenth-line referencing to legal PDFs.',
       link: [
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
@@ -32,19 +32,39 @@ export default defineNuxtConfig({
     preference: 'light',
   },
   ui: {
+    colors: {
+      primary: 'brand',
+      success: 'brand',
+      secondary: 'sand',
+      neutral: 'slate',
+    },
     theme: {
       colors: {
-        primary: {
-          50: '#f8f3ef',
-          100: '#f1e6dc',
-          200: '#e2ccba',
-          300: '#d3b398',
-          400: '#c49976',
-          500: '#b47f54',
-          600: '#8b5e3c',
-          700: '#6f4b31',
-          800: '#543927',
-          900: '#3a271b',
+        brand: {
+          50: '#f2f3f8',
+          100: '#e3e7f1',
+          200: '#c8d0e2',
+          300: '#adb8d3',
+          400: '#5f6f9d',
+          500: '#202848',
+          600: '#1b223f',
+          700: '#161d36',
+          800: '#11172c',
+          900: '#0d1222',
+          950: '#070a14',
+        },
+        sand: {
+          50: '#fcf9ef',
+          100: '#f5edd7',
+          200: '#ebdcb0',
+          300: '#e0cb88',
+          400: '#d5ba61',
+          500: '#cab03f',
+          600: '#a58d2f',
+          700: '#7f6c24',
+          800: '#594b18',
+          900: '#342d0f',
+          950: '#1d1808',
         },
       },
     },

@@ -1,6 +1,61 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
+:root {
+  /* Logo-derived palette */
+  --ui-color-brand-50: #f2f3f8;
+  --ui-color-brand-100: #e3e7f1;
+  --ui-color-brand-200: #c8d0e2;
+  --ui-color-brand-300: #adb8d3;
+  --ui-color-brand-400: #5f6f9d;
+  --ui-color-brand-500: #202848;
+  --ui-color-brand-600: #1b223f;
+  --ui-color-brand-700: #161d36;
+  --ui-color-brand-800: #11172c;
+  --ui-color-brand-900: #0d1222;
+  --ui-color-brand-950: #070a14;
+
+  --ui-color-sand-50: #fcf9ef;
+  --ui-color-sand-100: #f5edd7;
+  --ui-color-sand-200: #ebdcb0;
+  --ui-color-sand-300: #e0cb88;
+  --ui-color-sand-400: #d5ba61;
+  --ui-color-sand-500: #cab03f;
+  --ui-color-sand-600: #a58d2f;
+  --ui-color-sand-700: #7f6c24;
+  --ui-color-sand-800: #594b18;
+  --ui-color-sand-900: #342d0f;
+  --ui-color-sand-950: #1d1808;
+
+  /* Force Nuxt UI primary and success away from green */
+  --ui-color-primary-50: var(--ui-color-brand-50);
+  --ui-color-primary-100: var(--ui-color-brand-100);
+  --ui-color-primary-200: var(--ui-color-brand-200);
+  --ui-color-primary-300: var(--ui-color-brand-300);
+  --ui-color-primary-400: var(--ui-color-brand-400);
+  --ui-color-primary-500: var(--ui-color-brand-500);
+  --ui-color-primary-600: var(--ui-color-brand-600);
+  --ui-color-primary-700: var(--ui-color-brand-700);
+  --ui-color-primary-800: var(--ui-color-brand-800);
+  --ui-color-primary-900: var(--ui-color-brand-900);
+  --ui-color-primary-950: var(--ui-color-brand-950);
+
+  --ui-color-success-50: var(--ui-color-brand-50);
+  --ui-color-success-100: var(--ui-color-brand-100);
+  --ui-color-success-200: var(--ui-color-brand-200);
+  --ui-color-success-300: var(--ui-color-brand-300);
+  --ui-color-success-400: var(--ui-color-brand-400);
+  --ui-color-success-500: var(--ui-color-brand-500);
+  --ui-color-success-600: var(--ui-color-brand-600);
+  --ui-color-success-700: var(--ui-color-brand-700);
+  --ui-color-success-800: var(--ui-color-brand-800);
+  --ui-color-success-900: var(--ui-color-brand-900);
+  --ui-color-success-950: var(--ui-color-brand-950);
+
+  --ui-primary: var(--ui-color-brand-500);
+  --ui-success: var(--ui-color-brand-500);
+}
+
 html,
 body,
 #__nuxt,
@@ -8,7 +63,6 @@ button,
 input,
 select,
 textarea {
-  /* font-family: "Kumbh Sans", sans-serif; */
   font-family: "Outfit", sans-serif;
 }
 
