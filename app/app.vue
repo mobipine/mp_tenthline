@@ -244,7 +244,7 @@
                       <strong class="text-slate-900">{{ paymentAmountLabel }}</strong>
                     </p>
                   </div>
-                  <UAlert v-if="quoteError" color="warning" :title="quoteError" />
+                  <UAlert v-if="quoteError" color="error" :title="quoteError" />
                   <UAlert
                     v-else-if="quoteLoading"
                     color="primary"
@@ -655,7 +655,8 @@
 
 <script setup lang="ts">
 useHead({
-  title: 'Automatically apply tenth-line referencing to legal PDFs.'
+  // title: 'Automatically apply tenth-line referencing to legal PDFs.'
+  title: 'TenthLining AI - Add tenth-line referencing to legal PDFs automatically',
 })
 
 import { useFlowStore, type AppConfig } from '~/stores/flow'
@@ -974,7 +975,12 @@ async function fetchPaymentQuote(file: File) {
     paymentPageCount.value = 0
     paymentAmount.value = 0
     paymentUnitPrice.value = 0
-    quoteError.value = e?.data?.message || 'Could not calculate page count and pricing.'
+
+    if (e?.data?.code === 'pdf_damaged') {
+      quoteError.value = 'This PDF appears damaged or unsupported. Please re-export or re-download it and try again.'
+    } else {
+      quoteError.value = e?.data?.message || 'Could not calculate page count and pricing.'
+    }
   } finally {
     quoteLoading.value = false
   }
