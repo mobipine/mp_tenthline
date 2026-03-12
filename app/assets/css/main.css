@@ -27,18 +27,18 @@
   --ui-color-sand-900: #342d0f;
   --ui-color-sand-950: #1d1808;
 
-  /* Force Nuxt UI primary and success away from green */
-  --ui-color-primary-50: var(--ui-color-brand-50);
-  --ui-color-primary-100: var(--ui-color-brand-100);
-  --ui-color-primary-200: var(--ui-color-brand-200);
-  --ui-color-primary-300: var(--ui-color-brand-300);
-  --ui-color-primary-400: var(--ui-color-brand-400);
-  --ui-color-primary-500: var(--ui-color-brand-500);
-  --ui-color-primary-600: var(--ui-color-brand-600);
-  --ui-color-primary-700: var(--ui-color-brand-700);
-  --ui-color-primary-800: var(--ui-color-brand-800);
-  --ui-color-primary-900: var(--ui-color-brand-900);
-  --ui-color-primary-950: var(--ui-color-brand-950);
+  /* Use sand tones as the primary interface color */
+  --ui-color-primary-50: var(--ui-color-sand-50);
+  --ui-color-primary-100: var(--ui-color-sand-100);
+  --ui-color-primary-200: var(--ui-color-sand-200);
+  --ui-color-primary-300: var(--ui-color-sand-300);
+  --ui-color-primary-400: var(--ui-color-sand-400);
+  --ui-color-primary-500: var(--ui-color-sand-500);
+  --ui-color-primary-600: var(--ui-color-sand-600);
+  --ui-color-primary-700: var(--ui-color-sand-700);
+  --ui-color-primary-800: var(--ui-color-sand-800);
+  --ui-color-primary-900: var(--ui-color-sand-900);
+  --ui-color-primary-950: var(--ui-color-sand-950);
 
   --ui-color-success-50: var(--ui-color-brand-50);
   --ui-color-success-100: var(--ui-color-brand-100);
@@ -52,7 +52,7 @@
   --ui-color-success-900: var(--ui-color-brand-900);
   --ui-color-success-950: var(--ui-color-brand-950);
 
-  --ui-primary: var(--ui-color-brand-500);
+  --ui-primary: var(--ui-color-sand-500);
   --ui-success: var(--ui-color-brand-500);
 }
 
