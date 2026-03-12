@@ -199,7 +199,7 @@
                   <span
                     class="inline-flex min-w-[150px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700"
                   >
-                    {{ flow.stage === 'download' ? 'Completed' : paymentConfirmed ? 'Payment confirmed' : 'Payment required' }}
+                    {{ flow.stage === 'download' ? 'Completed' : paymentConfirmed ? 'Payment confirmed' : paymentIsFree ? 'No payment required' : 'Payment required' }}
                   </span>
                   <!-- Close button -->
                   <button
@@ -228,7 +228,7 @@
                 <!-- Step 1: Config (options fixed: right margin, font 8pt; line interval from domain) -->
                 <div v-if="flowStep === 'config'" key="config" class="space-y-6">
                   <p class="text-sm leading-relaxed text-slate-600">
-                    Line numbers are added on the right margin. Review the quote below and proceed to payment.
+                    Line numbers are added on the right margin. Review the quote below and {{ paymentIsFree ? 'start processing.' : 'proceed to payment.' }}
                   </p>
                   <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 space-y-1.5">
                     <p>
@@ -259,7 +259,7 @@
                       <UIcon name="i-heroicons-check-circle" class="mt-0.5 h-5 w-5 text-primary-600" />
                       <div>
                         <p class="text-sm font-semibold">{{ paymentPageCount }} pages detected</p>
-                        <p class="text-sm text-primary-700/90">We'll charge based on {{ paymentPageCount }} pages.</p>
+                        <p class="text-sm text-primary-700/90">{{ paymentIsFree ? 'No payment is required for this document.' : "We'll charge based on " + paymentPageCount + ' pages.' }}</p>
                       </div>
                     </div>
                   </div>
@@ -346,7 +346,7 @@
                     class="-ml-2"
                     @click="goToPaymentStep"
                   >
-                    Back to payment
+                    {{ paymentIsFree ? 'Back to quote' : 'Back to payment' }}
                   </UButton>
                   <div v-if="flow.stage === 'processing'" class="space-y-4">
                     <UAlert
@@ -396,7 +396,7 @@
                   <div v-else-if="flow.stage === 'error'" class="space-y-4">
                     <UAlert color="error" :title="flow.error || 'Processing failed.'" />
                     <UButton size="lg" variant="soft" color="primary" class="rounded-xl" @click="goToPaymentStep">
-                      Back to payment
+                      {{ paymentIsFree ? 'Back to quote' : 'Back to payment' }}
                     </UButton>
                   </div>
                   <div v-else class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
@@ -411,7 +411,7 @@
               <Transition name="panel-fade" mode="out-in">
                 <div v-if="flowStep === 'config'" key="config-footer" class="space-y-3">
                   <UButton block size="lg" color="primary" class="rounded-xl py-3 text-base font-semibold" @click="goToPaymentStep">
-                    Next: Payment
+                    {{ paymentIsFree ? 'Start processing' : 'Next: Payment' }}
                   </UButton>
                 </div>
                 <div v-else-if="flowStep === 'payment'" key="payment-footer" class="space-y-3">
@@ -437,7 +437,7 @@
                     }}
                   </UButton>
                   <p class="text-center text-xs text-slate-500">
-                    Processing begins automatically after payment confirmation.
+                    {{ paymentIsFree ? 'No payment required. Processing starts immediately once you continue.' : 'Processing begins automatically after payment confirmation.' }}
                   </p>
                 </div>
                 <div v-else key="progress-footer" class="space-y-3">
@@ -737,15 +737,20 @@ let pusherChannel: any = null
 const paymentConfirmed = computed(() => !!flow.paymentReference)
 const paymentEnabled = computed(() => flow.config?.enable_payment !== false)
 const paymentSimulationMode = computed(() => !paymentEnabled.value)
+const FREE_AMOUNT_EPSILON = 0.0001
+const paymentIsFree = computed(() => paymentPageCount.value > 0 && paymentAmount.value <= FREE_AMOUNT_EPSILON)
+const paymentRequiresCharge = computed(() => paymentPageCount.value > 0 && paymentAmount.value > FREE_AMOUNT_EPSILON)
 const paymentAmountLabel = computed(() => {
   const currency = flow.config?.currency || 'KES'
-  const amount = paymentAmount.value > 0 ? paymentAmount.value : paymentUnitPrice.value > 0 ? paymentUnitPrice.value : (flow.config?.price_per_page ?? 5)
-  return `${currency} ${amount.toFixed(2)}`
+  const defaultPrice = Number(flow.config?.price_per_page ?? 5)
+  const amount = paymentPageCount.value > 0 ? paymentAmount.value : defaultPrice
+  return `${currency} ${Math.max(0, amount).toFixed(2)}`
 })
 const paymentUnitPriceLabel = computed(() => {
   const currency = flow.config?.currency || 'KES'
-  const unitPrice = paymentUnitPrice.value > 0 ? paymentUnitPrice.value : (flow.config?.price_per_page ?? 5)
-  return `${currency} ${unitPrice.toFixed(2)}`
+  const defaultPrice = Number(flow.config?.price_per_page ?? 5)
+  const unitPrice = paymentPageCount.value > 0 ? paymentUnitPrice.value : defaultPrice
+  return `${currency} ${Math.max(0, unitPrice).toFixed(2)}`
 })
 
 const progressPercentage = computed(() => {
@@ -1038,6 +1043,23 @@ function goToPaymentStep() {
     panelError.value = quoteError.value || 'Could not determine page count. Please reselect your PDF.'
     return
   }
+
+  if (paymentIsFree.value) {
+    panelError.value = null
+
+    if (!auth.isAuthenticated) {
+      openAuthModal('login')
+      authEmail.value = authEmail.value.trim() || paymentEmail.value.trim()
+      panelError.value = 'Sign in to continue. This document is free and will be processed without payment.'
+      return
+    }
+
+    paymentStatusMessage.value = 'No payment required. Starting processing...'
+    paymentAccountNotice.value = 'No payment required for this document. Processing will start immediately.'
+    submitUpload()
+    return
+  }
+
   flowStep.value = 'payment'
   flow.stage = 'payment'
 }
@@ -1204,6 +1226,11 @@ function stopPaymentPolling() {
 }
 
 function handlePaymentPrimaryAction() {
+  if (paymentIsFree.value) {
+    submitUpload()
+    return
+  }
+
   if (paymentConfirmed.value) {
     submitUpload()
     return
@@ -1221,7 +1248,7 @@ async function submitUpload() {
     return
   }
 
-  if (!flow.paymentReference) {
+  if (paymentRequiresCharge.value && !flow.paymentReference) {
     panelError.value = 'Payment must be completed before processing.'
     return
   }
@@ -1249,7 +1276,9 @@ async function submitUpload() {
     form.append('line_interval', String(flow.uploadOptions.line_interval))
     form.append('margin', flow.uploadOptions.margin)
     form.append('font_size_pt', String(flow.uploadOptions.font_size_pt))
-    form.append('payment_reference', flow.paymentReference)
+    if (paymentRequiresCharge.value && flow.paymentReference) {
+      form.append('payment_reference', flow.paymentReference)
+    }
 
     const res = await $fetch<{ job_id: string }>(`${apiBase()}/api/upload`, {
       method: 'POST',
@@ -1264,7 +1293,11 @@ async function submitUpload() {
     await fetchJobSnapshot(res.job_id)
   } catch (e: any) {
     panelError.value = e?.data?.message || 'Could not upload your PDF.'
-    goToPaymentStep()
+    if (paymentRequiresCharge.value) {
+      goToPaymentStep()
+    } else {
+      goToConfigStep()
+    }
   } finally {
     uploading.value = false
   }
