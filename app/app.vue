@@ -125,7 +125,7 @@
                 </div>
                 <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
                   <p class="text-sm leading-relaxed text-slate-600">
-                    Continue in the right panel to pay and track realtime progress.
+                    Continue in the right panel to pay and complete the process
                   </p>
                   <div class="mt-4 flex flex-wrap gap-3">
                     <UButton color="primary" class="rounded-xl px-5 font-semibold" @click="openFlowPanel('config')">
@@ -147,15 +147,15 @@
               <ol class="mt-4 space-y-4 text-sm text-slate-600">
                 <li class="flex gap-3">
                   <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">1</span>
-                  <span>Review page count and price, then pay with M-Pesa.</span>
+                  <span>Upload your PDF</span>
                 </li>
                 <li class="flex gap-3">
                   <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">2</span>
-                  <span>Pay with M-Pesa and auto-link to your account.</span>
+                  <span>Pay using M-Pesa</span>
                 </li>
                 <li class="flex gap-3">
                   <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">3</span>
-                  <span>Watch live processing progress and download in step 3.</span>
+                  <span>Download your processed PDF</span>
                 </li>
               </ol>
             </div>
@@ -247,8 +247,7 @@
                   <UAlert v-if="quoteError" color="warning" :title="quoteError" />
                   <UAlert
                     v-else-if="quoteLoading"
-                    color="info"
-                    icon="i-heroicons-arrow-path"
+                    color="primary"
                     title="Reading PDF pages..."
                   />
                   <div
@@ -274,7 +273,7 @@
                     Back to options
                   </UButton>
                   <UAlert
-                    color="info"
+                    color="primary"
                     icon="i-heroicons-device-phone-mobile"
                     :title="paymentEnabled ? 'M-Pesa payment required' : 'Payment simulation mode'"
                     :description="paymentEnabled
@@ -350,7 +349,7 @@
                   </UButton>
                   <div v-if="flow.stage === 'processing'" class="space-y-4">
                     <UAlert
-                      color="info"
+                      color="primary"
                       icon="i-heroicons-sparkles"
                       title="Your document is being processed"
                       description=""
@@ -764,7 +763,7 @@ const progressPercentage = computed(() => {
 })
 
 const flowPanelHeadline = computed(() => {
-  if (flowStep.value === 'config') return 'Review quote and pay'
+  if (flowStep.value === 'config') return 'Your Document'
   if (flowStep.value === 'payment') return 'Confirm payment details'
   if (flow.stage === 'download') return 'Download your processed PDF'
   if (flow.stage === 'error') return 'Processing error'
