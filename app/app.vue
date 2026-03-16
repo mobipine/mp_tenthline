@@ -71,17 +71,29 @@
           </div>
 
           <div class="mt-12">
+            <input
+              id="pdf-upload-input"
+              ref="fileInput"
+              type="file"
+              accept=".pdf,application/pdf"
+              class="sr-only"
+              @change="onFileSelect"
+            >
             <!-- Drop zone -->
             <div
               v-if="!flow.selectedFile"
               class="dropzone-card cursor-pointer mx-auto max-w-3xl rounded-3xl border-2 border-dashed p-8 text-center sm:p-12"
               :class="isDragging ? 'dragging' : ''"
-              @click="fileInput?.click()"
+              role="button"
+              tabindex="0"
+              @click="openFilePicker"
+              @keydown.enter.prevent="openFilePicker"
+              @keydown.space.prevent="openFilePicker"
+              @dragenter.prevent="isDragging = true"
               @dragover.prevent="isDragging = true"
               @dragleave.prevent="isDragging = false"
-              @drop.prevent="onDrop"
+              @drop.prevent.stop="onDrop"
             >
-              <input ref="fileInput" type="file" accept=".pdf,application/pdf" class="hidden" @change="onFileSelect">
               <div class="mx-auto inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-50 text-primary-600">
                 <UIcon name="i-heroicons-document-arrow-up" class="h-8 w-8" />
               </div>
@@ -94,7 +106,7 @@
                   size="xl"
                   color="primary"
                   class="min-w-56 rounded-xl px-10 py-3 text-base font-semibold shadow-lg shadow-primary-500/25 flex justify-center items-center gap-2"
-                  @click.stop="fileInput?.click()"
+                  @click.stop="openFilePicker"
                 >
                   Select PDF file
                 </UButton>
@@ -127,6 +139,12 @@
                   <p class="text-sm leading-relaxed text-slate-600">
                     Continue in the right panel to pay and complete the process
                   </p>
+                  <div
+                    v-if="isLargeSelectedFile"
+                    class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+                  >
+                    This is a larger file, so it may take a little longer to upload. Keep this page open and we'll automatically start the next step once it's ready.
+                  </div>
                   <div class="mt-4 flex flex-wrap gap-3">
                     <UButton color="primary" class="rounded-xl px-5 font-semibold" @click="openFlowPanel('config')">
                       Open setup panel
@@ -139,7 +157,6 @@
                     </UButton>
                   </div>
                 </div>
-                <input ref="fileInput" type="file" accept=".pdf,application/pdf" class="hidden" @change="onFileSelect">
               </div>
 
               <div class="rounded-3xl border border-slate-200/80 bg-white/80 p-6 backdrop-blur sm:p-8 animate-fade-up-delay">
@@ -199,7 +216,7 @@
                   <span
                     class="inline-flex min-w-[150px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700"
                   >
-                    {{ flow.stage === 'download' ? 'Completed' : paymentConfirmed ? 'Payment confirmed' : paymentIsFree ? 'No payment required' : 'Payment required' }}
+                    {{ flow.stage === 'uploading' ? 'Uploading file' : flow.stage === 'download' ? 'Completed' : paymentConfirmed ? 'Payment confirmed' : paymentIsFree ? 'No payment required' : 'Payment required' }}
                   </span>
                   <!-- Close button -->
                   <button
@@ -251,7 +268,13 @@
                     title="Reading PDF pages..."
                   />
                   <div
-                    v-else-if="paymentPageCount > 0"
+                    v-if="isLargeSelectedFile"
+                    class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+                  >
+                    This file is a bit large, so the upload may take a few minutes. Keep this page open and we'll continue automatically as soon as it's done.
+                  </div>
+                  <div
+                    v-if="paymentPageCount > 0 && !quoteError && !quoteLoading"
                     class="rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-primary-800"
                   >
                     <div class="flex items-start gap-2">
@@ -262,7 +285,7 @@
                       </div>
                     </div>
                   </div>
-                  <div v-else class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                  <div v-else-if="!quoteError && !quoteLoading" class="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                     Select a PDF to compute page count and pricing.
                   </div>
                 </div>
@@ -337,7 +360,7 @@
                 <!-- Step 3: Progress / Download / Error -->
                 <div v-else key="progress" class="space-y-6">
                   <UButton
-                    v-if="flow.stage !== 'processing'"
+                    v-if="flow.stage !== 'processing' && flow.stage !== 'uploading'"
                     variant="ghost"
                     color="gray"
                     size="sm"
@@ -347,7 +370,39 @@
                   >
                     {{ paymentIsFree ? 'Back to quote' : 'Back to payment' }}
                   </UButton>
-                  <div v-if="flow.stage === 'processing'" class="space-y-4">
+                  <div v-if="flow.stage === 'uploading'" class="space-y-4">
+                    <UAlert
+                      color="primary"
+                      icon="i-heroicons-arrow-up-tray"
+                      :title="uploadProgressPercentage >= 100 ? 'Finalizing upload' : 'Uploading your document'"
+                      :description="uploadProgressPercentage >= 100 ? 'Your PDF has been sent. We are creating the processing job now.' : 'Stay on this page while the upload finishes. Processing will begin automatically.'"
+                    />
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                      <div class="mb-3 flex items-center justify-between gap-3">
+                        <p class="text-sm font-semibold text-slate-900">Sending PDF to the server</p>
+                        <span class="text-sm font-semibold text-primary-700">{{ uploadProgressPercentage }}%</span>
+                      </div>
+                      <UProgress :model-value="uploadProgressPercentage" :max="100" size="xl" />
+                      <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
+                        <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                          {{ uploadTransferredLabel }}
+                        </span>
+                        <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                          {{ uploadSpeedLabel }}
+                        </span>
+                        <span class="rounded-full border border-slate-200 bg-white px-2.5 py-1">
+                          {{ uploadEtaLabel }}
+                        </span>
+                      </div>
+                      <p
+                        v-if="isLargeSelectedFile"
+                        class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800"
+                      >
+                        Bigger files can take a little longer to upload. Thanks for waiting - we'll begin processing as soon as the upload finishes.
+                      </p>
+                    </div>
+                  </div>
+                  <div v-else-if="flow.stage === 'processing'" class="space-y-4">
                     <UAlert
                       color="primary"
                       icon="i-heroicons-sparkles"
@@ -427,7 +482,7 @@
                       flow.paymentPolling
                         ? 'Waiting for payment confirmation...'
                         : uploading
-                          ? 'Starting processing...'
+                          ? 'Uploading document...'
                           : paymentConfirmed
                             ? 'Start processing'
                             : paymentSimulationMode
@@ -728,15 +783,24 @@ const historyLoading = ref(false)
 const historyJobs = ref<HistoryJob[]>([])
 const downloadingCurrentJob = ref(false)
 const historyDownloadingJobId = ref<string | null>(null)
+const uploadLoadedBytes = ref(0)
+const uploadTotalBytes = ref(0)
+const uploadBytesPerSecond = ref<number | null>(null)
+const uploadEtaSeconds = ref<number | null>(null)
 
 const PAYMENT_POLL_INTERVAL_MS = 2000
 const PAYMENT_POLL_TIMEOUT_MS = 8 * 60 * 1000
+const PDF_PAGE_COUNT_TIMEOUT_MS = 4000
+const LARGE_FILE_THRESHOLD_MB = 100
+const LARGE_FILE_THRESHOLD_BYTES = LARGE_FILE_THRESHOLD_MB * 1024 * 1024
 
 let paymentPollInterval: ReturnType<typeof setInterval> | null = null
 let paymentPollStartedAt = 0
 let jobPollInterval: ReturnType<typeof setInterval> | null = null
 let pusherClient: any = null
 let pusherChannel: any = null
+let uploadStartedAt = 0
+let pdfJsLibPromise: Promise<any> | null = null
 
 const paymentConfirmed = computed(() => !!flow.paymentReference)
 const paymentEnabled = computed(() => flow.config?.enable_payment !== false)
@@ -756,6 +820,29 @@ const paymentUnitPriceLabel = computed(() => {
   const unitPrice = paymentPageCount.value > 0 ? paymentUnitPrice.value : defaultPrice
   return `${currency} ${Math.max(0, unitPrice).toFixed(2)}`
 })
+const isLargeSelectedFile = computed(() => Number(flow.selectedFile?.size || 0) >= LARGE_FILE_THRESHOLD_BYTES)
+const uploadProgressPercentage = computed(() => {
+  const total = Number(uploadTotalBytes.value || flow.selectedFile?.size || 0)
+  if (!total) return 0
+  return Math.max(0, Math.min(100, Math.round((uploadLoadedBytes.value / total) * 100)))
+})
+const uploadTransferredLabel = computed(() => {
+  const total = Number(uploadTotalBytes.value || flow.selectedFile?.size || 0)
+  const loaded = Math.min(uploadLoadedBytes.value, total || uploadLoadedBytes.value)
+  if (!total) return 'Preparing upload...'
+  return `Uploaded ${formatSize(loaded)} of ${formatSize(total)}`
+})
+const uploadSpeedLabel = computed(() => {
+  if (!uploadBytesPerSecond.value || uploadBytesPerSecond.value <= 0) {
+    return 'Speed calculating...'
+  }
+  return `Speed ${formatSize(uploadBytesPerSecond.value)}/s`
+})
+const uploadEtaLabel = computed(() => {
+  if (uploadProgressPercentage.value >= 100) return 'ETA almost done'
+  if (uploadEtaSeconds.value === null) return 'ETA calculating...'
+  return `ETA ${formatEta(uploadEtaSeconds.value)}`
+})
 
 const progressPercentage = computed(() => {
   const raw = Number(flow.job?.progress ?? 0)
@@ -766,6 +853,7 @@ const progressPercentage = computed(() => {
 const flowPanelHeadline = computed(() => {
   if (flowStep.value === 'config') return 'Your Document'
   if (flowStep.value === 'payment') return 'Confirm payment details'
+  if (flow.stage === 'uploading') return 'Uploading your PDF'
   if (flow.stage === 'download') return 'Download your processed PDF'
   if (flow.stage === 'error') return 'Processing error'
   return 'Realtime processing status'
@@ -805,6 +893,7 @@ watch(
       paymentUnitPrice.value = 0
       quoteError.value = null
       quoteLoading.value = false
+      resetUploadMetrics()
       return
     }
 
@@ -822,22 +911,8 @@ watch(
 
 watch(
   () => auth.user,
-  async (user, previousUser) => {
+  (user) => {
     hydratePaymentContactFromUser(user)
-
-    if (previousUser === undefined || !flow.selectedFile) return
-    if (isSameAuthUser(user, previousUser)) return
-
-    const previousUnitPrice = paymentUnitPrice.value
-    const previousAmount = paymentAmount.value
-
-    await fetchPaymentQuote(flow.selectedFile)
-    if (quoteError.value) return
-
-    if (hasQuotePricingChanged(previousUnitPrice, previousAmount) && user) {
-      const currency = flow.config?.currency || 'KES'
-      paymentAccountNotice.value = `Signed in pricing applied: ${currency} ${paymentUnitPrice.value.toFixed(2)} per page. Updated total: ${currency} ${paymentAmount.value.toFixed(2)}.`
-    }
   },
   { immediate: true }
 )
@@ -885,6 +960,30 @@ function authHeaders() {
   return auth.authHeaders()
 }
 
+function resetUploadMetrics(totalBytes = 0) {
+  uploadLoadedBytes.value = 0
+  uploadTotalBytes.value = totalBytes
+  uploadBytesPerSecond.value = null
+  uploadEtaSeconds.value = null
+  uploadStartedAt = 0
+}
+
+function updateUploadMetrics(loaded: number, total: number) {
+  uploadLoadedBytes.value = Math.max(0, loaded)
+  uploadTotalBytes.value = Math.max(total, loaded, uploadTotalBytes.value)
+
+  if (!uploadStartedAt) {
+    uploadStartedAt = Date.now()
+  }
+
+  const elapsedSeconds = Math.max((Date.now() - uploadStartedAt) / 1000, 0.25)
+  const bytesPerSecond = loaded / elapsedSeconds
+  uploadBytesPerSecond.value = bytesPerSecond > 0 ? bytesPerSecond : null
+
+  const remainingBytes = Math.max(0, total - loaded)
+  uploadEtaSeconds.value = bytesPerSecond > 0 ? Math.ceil(remainingBytes / bytesPerSecond) : null
+}
+
 function hydratePaymentContactFromUser(user: AuthUser | null | undefined) {
   if (!user) return
 
@@ -899,6 +998,82 @@ function hydratePaymentContactFromUser(user: AuthUser | null | undefined) {
 
 function isPdfFile(file: File): boolean {
   return file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')
+}
+
+function maxAllowedFileSizeBytes(): number {
+  return Number(flow.config?.max_file_size_mb ?? 500) * 1024 * 1024
+}
+
+function validateSelectedFile(file: File): string | null {
+  if (!isPdfFile(file)) {
+    return 'Only PDF files are allowed.'
+  }
+
+  if (file.size > maxAllowedFileSizeBytes()) {
+    return `This file is larger than the ${flow.config?.max_file_size_mb ?? 500} MB limit.`
+  }
+
+  return null
+}
+
+async function getPdfJs() {
+  if (!process.client) {
+    throw new Error('PDF page counting is only available in the browser.')
+  }
+
+  if (!pdfJsLibPromise) {
+    pdfJsLibPromise = import('pdfjs-dist/webpack.mjs')
+  }
+
+  return await pdfJsLibPromise
+}
+
+async function detectPdfPageCount(file: File): Promise<number> {
+  const pdfjs = await getPdfJs()
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+  let pdf: any = null
+  const loadingTask = pdfjs.getDocument({
+    data: await file.arrayBuffer(),
+    useWorkerFetch: false,
+    isEvalSupported: false,
+  })
+
+  try {
+    pdf = await Promise.race([
+      loadingTask.promise,
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+          void loadingTask.destroy().catch(() => {})
+          reject(new Error('Page counting timed out in the browser.'))
+        }, PDF_PAGE_COUNT_TIMEOUT_MS)
+      }),
+    ])
+
+    return Number(pdf.numPages || 0)
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+
+    if (pdf?.cleanup) {
+      try {
+        await pdf.cleanup()
+      } catch {
+        // Best-effort cleanup only; don't block the quote UI.
+      }
+    }
+  }
+}
+
+async function fetchPaymentQuoteFromApi(file: File) {
+  const form = new FormData()
+  form.append('file', file)
+
+  return await $fetch<{ page_count: number; unit_price: number; amount: number }>(`${apiBase()}/api/payments/quote`, {
+    method: 'POST',
+    body: form,
+    headers: authHeaders(),
+  })
 }
 
 function prepareNewFile(file: File) {
@@ -920,8 +1095,14 @@ function prepareNewFile(file: File) {
   paymentUnitPrice.value = 0
   quoteError.value = null
   quoteLoading.value = false
+  resetUploadMetrics(file.size)
 
   flow.setSelectedFile(file)
+}
+
+function openFilePicker() {
+  panelError.value = null
+  fileInput.value?.click()
 }
 
 function onFileSelect(e: Event) {
@@ -930,8 +1111,9 @@ function onFileSelect(e: Event) {
 
   if (!file) return
 
-  if (!isPdfFile(file)) {
-    panelError.value = 'Only PDF files are allowed.'
+  const validationError = validateSelectedFile(file)
+  if (validationError) {
+    panelError.value = validationError
     input.value = ''
     return
   }
@@ -946,8 +1128,9 @@ function onDrop(e: DragEvent) {
 
   if (!file) return
 
-  if (!isPdfFile(file)) {
-    panelError.value = 'Only PDF files are allowed.'
+  const validationError = validateSelectedFile(file)
+  if (validationError) {
+    panelError.value = validationError
     return
   }
 
@@ -959,43 +1142,53 @@ async function fetchPaymentQuote(file: File) {
   quoteError.value = null
 
   try {
-    const form = new FormData()
-    form.append('file', file)
+    try {
+      const pageCount = await detectPdfPageCount(file)
+      const maxPages = Number(flow.config?.max_pages ?? 0)
 
-    const quote = await $fetch<{ page_count: number; unit_price: number; amount: number }>(`${apiBase()}/api/payments/quote`, {
-      method: 'POST',
-      body: form,
-      headers: authHeaders(),
-    })
+      if (pageCount < 1) {
+        throw new Error('Could not determine page count.')
+      }
 
-    paymentPageCount.value = Number(quote.page_count || 0)
-    paymentUnitPrice.value = Number(quote.unit_price || 0)
-    paymentAmount.value = Number(quote.amount || 0)
+      if (maxPages > 0 && pageCount > maxPages) {
+        throw new Error(`This PDF has ${pageCount} pages, which is above the ${maxPages}-page limit.`)
+      }
+
+      const unitPrice = Number(flow.config?.price_per_page ?? 5)
+
+      paymentPageCount.value = pageCount
+      paymentUnitPrice.value = unitPrice
+      paymentAmount.value = Number((pageCount * unitPrice).toFixed(2))
+      return
+    } catch (clientError: any) {
+      const quote = await fetchPaymentQuoteFromApi(file)
+
+      paymentPageCount.value = Number(quote.page_count || 0)
+      paymentUnitPrice.value = Number(quote.unit_price || 0)
+      paymentAmount.value = Number(quote.amount || 0)
+
+      if (paymentPageCount.value > 0) {
+        return
+      }
+
+      throw clientError
+    }
   } catch (e: any) {
     paymentPageCount.value = 0
     paymentAmount.value = 0
     paymentUnitPrice.value = 0
 
-    if (e?.data?.code === 'pdf_damaged') {
+    const errorName = String(e?.name || '')
+    if (e?.data?.code === 'pdf_damaged' || errorName === 'InvalidPDFException' || errorName === 'FormatError') {
       quoteError.value = 'This PDF appears damaged or unsupported. Please re-export or re-download it and try again.'
+    } else if (errorName === 'PasswordException') {
+      quoteError.value = 'Password-protected PDFs are not supported yet. Please remove the password and try again.'
     } else {
       quoteError.value = e?.data?.message || 'Could not calculate page count and pricing.'
     }
   } finally {
     quoteLoading.value = false
   }
-}
-
-function isSameAuthUser(a: AuthUser | null | undefined, b: AuthUser | null | undefined): boolean {
-  if (!a && !b) return true
-  if (!a || !b) return false
-  return a.id === b.id && a.email === b.email
-}
-
-function hasQuotePricingChanged(previousUnitPrice: number, previousAmount: number): boolean {
-  const EPSILON = 0.0001
-  return Math.abs(paymentUnitPrice.value - previousUnitPrice) > EPSILON
-    || Math.abs(paymentAmount.value - previousAmount) > EPSILON
 }
 
 function formatSize(bytes: number): string {
@@ -1030,6 +1223,75 @@ function statusBadgeClass(status: string): string {
   if (status === 'deleted') return 'border-slate-200 bg-slate-100 text-slate-700'
   if (status === 'processing') return 'border-amber-200 bg-amber-50 text-amber-700'
   return 'border-primary-200 bg-primary-50 text-primary-800'
+}
+
+function parseXhrJson(xhr: XMLHttpRequest) {
+  if (xhr.response && typeof xhr.response === 'object') {
+    return xhr.response as Record<string, any>
+  }
+
+  if (!xhr.responseText) return null
+
+  try {
+    return JSON.parse(xhr.responseText) as Record<string, any>
+  } catch {
+    return null
+  }
+}
+
+function createUploadError(xhr: XMLHttpRequest) {
+  const data = parseXhrJson(xhr)
+  return {
+    data,
+    status: xhr.status,
+    message: data?.message || 'Could not upload your PDF.',
+  }
+}
+
+function uploadPdf(form: FormData): Promise<{ job_id: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    const totalBytes = Number(flow.selectedFile?.size || uploadTotalBytes.value || 0)
+
+    uploadStartedAt = Date.now()
+    uploadTotalBytes.value = totalBytes
+    flow.stage = 'uploading'
+
+    xhr.open('POST', `${apiBase()}/api/upload`)
+    xhr.responseType = 'json'
+
+    for (const [key, value] of Object.entries(authHeaders())) {
+      if (value !== undefined && value !== null) {
+        xhr.setRequestHeader(key, String(value))
+      }
+    }
+
+    xhr.upload.onprogress = (event) => {
+      const total = event.lengthComputable ? event.total : totalBytes
+      updateUploadMetrics(event.loaded, total)
+    }
+
+    xhr.onerror = () => {
+      reject({
+        data: {
+          message: 'Network error while uploading your PDF. Please try again.',
+        },
+      })
+    }
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        updateUploadMetrics(totalBytes || uploadLoadedBytes.value, totalBytes || uploadTotalBytes.value || 0)
+        const data = parseXhrJson(xhr)
+        resolve((data || {}) as { job_id: string })
+        return
+      }
+
+      reject(createUploadError(xhr))
+    }
+
+    xhr.send(form)
+  })
 }
 
 function openFlowPanel(step: 'config' | 'payment' | 'progress') {
@@ -1078,10 +1340,10 @@ function goToConfigStep() {
   flow.stage = 'config'
 }
 
-function goToProgressStep() {
+function goToProgressStep(stage: 'uploading' | 'processing' = 'processing') {
   flowStep.value = 'progress'
   flowPanelOpen.value = true
-  flow.stage = 'processing'
+  flow.stage = stage
 }
 
 function clearFile() {
@@ -1097,6 +1359,7 @@ function clearFile() {
   paymentPageCount.value = 0
   paymentAmount.value = 0
   paymentUnitPrice.value = 0
+  resetUploadMetrics()
 
   flow.reset()
   flowPanelOpen.value = false
@@ -1269,15 +1532,11 @@ async function submitUpload() {
   }
 
   uploading.value = true
-  goToProgressStep()
-  flow.setJob({
-    status: 'processing',
-    progress: 0,
-    processed_pages: 0,
-    total_pages: 0,
-    eta_seconds: null,
-    error_message: null,
-  })
+  resetUploadMetrics(file.size)
+  goToProgressStep('uploading')
+  flow.jobId = null
+  flow.job = null
+  flow.error = null
 
   try {
     const form = new FormData()
@@ -1289,14 +1548,18 @@ async function submitUpload() {
       form.append('payment_reference', flow.paymentReference)
     }
 
-    const res = await $fetch<{ job_id: string }>(`${apiBase()}/api/upload`, {
-      method: 'POST',
-      body: form,
-      headers: authHeaders(),
-    })
+    const res = await uploadPdf(form)
 
     flow.setJobId(res.job_id)
-    goToProgressStep()
+    flow.setJob({
+      status: 'processing',
+      progress: 0,
+      processed_pages: 0,
+      total_pages: paymentPageCount.value,
+      eta_seconds: null,
+      error_message: null,
+    })
+    goToProgressStep('processing')
 
     await subscribeToJobChannel(res.job_id)
     await fetchJobSnapshot(res.job_id)

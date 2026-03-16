@@ -4,6 +4,7 @@ export type Stage =
   | 'upload'      // no file yet
   | 'config'      // file selected, offcanvas open (config panel)
   | 'payment'     // user clicked Next, payment panel (email, phone, pay)
+  | 'uploading'
   | 'processing'
   | 'download'
   | 'error'
