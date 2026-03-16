@@ -379,7 +379,7 @@
                     />
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                       <div class="mb-3 flex items-center justify-between gap-3">
-                        <p class="text-sm font-semibold text-slate-900">Sending PDF to the server</p>
+                        <p class="text-sm font-semibold text-slate-900">Uploading PDF..</p>
                         <span class="text-sm font-semibold text-primary-700">{{ uploadProgressPercentage }}%</span>
                       </div>
                       <UProgress :model-value="uploadProgressPercentage" :max="100" size="xl" />
