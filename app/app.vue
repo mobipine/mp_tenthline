@@ -124,34 +124,59 @@
 
             <!-- File selected card -->
             <div v-else class="flex gap-6 flex-col lg:flex-row items-center justify-center animate-fade-up">
-              <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_30px_60px_-40px_rgba(15,23,42,0.45)] sm:p-8 animate-fade-up ">
-                <div class="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <p class="text-sm font-semibold uppercase tracking-[0.12em] text-primary-600">File Ready</p>
-                    <h2 class="mt-2 text-sm lg:text-xl font-semibold text-slate-900 wrap-break-word">{{ flow.selectedFile.name }}</h2>
-                    <p class="mt-1 text-sm text-slate-500">{{ formatSize(flow.selectedFile.size) }}</p>
-                  </div>
-                  <UBadge color="primary" variant="soft" class="rounded-full px-3 py-1 text-xs font-semibold">
-                    1 PDF selected
-                  </UBadge>
-                </div>
-                <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                  <p class="text-sm leading-relaxed text-slate-600">
-                    Continue in the right panel to pay and complete the process
-                  </p>
-                  <div
-                    v-if="isLargeSelectedFile"
-                    class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
-                  >
-                    This is a larger file, so it may take a little longer to upload. Keep this page open and we'll automatically start the next step once it's ready.
-                  </div>
-                  <div class="mt-4 flex flex-wrap gap-3">
-                    <UButton color="primary" class="rounded-xl px-5 font-semibold" @click="openFlowPanel('config')">
-                      Open setup panel
-                    </UButton>
-                    <!-- <UButton variant="soft" color="primary" class="rounded-xl px-5 font-semibold" @click="openFlowPanel('payment')">
-                      Go to payment
-                    </UButton> -->
+	              <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_30px_60px_-40px_rgba(15,23,42,0.45)] sm:p-8 animate-fade-up ">
+	                <div class="flex flex-wrap items-start justify-between gap-4">
+	                  <div>
+	                    <p class="text-sm font-semibold uppercase tracking-[0.12em] text-primary-600">
+	                      {{ selectedFileCannotBeProcessed ? 'File blocked' : 'File Ready' }}
+	                    </p>
+	                    <h2 class="mt-2 text-sm lg:text-xl font-semibold text-slate-900 wrap-break-word">{{ flow.selectedFile.name }}</h2>
+	                    <p class="mt-1 text-sm text-slate-500">{{ formatSize(flow.selectedFile.size) }}</p>
+	                  </div>
+	                  <UBadge
+	                    :color="selectedFileCannotBeProcessed ? 'error' : 'primary'"
+	                    variant="soft"
+	                    class="rounded-full px-3 py-1 text-xs font-semibold"
+	                  >
+	                    {{ selectedFileCannotBeProcessed ? 'Cannot process' : '1 PDF selected' }}
+	                  </UBadge>
+	                </div>
+	                <div class="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+	                  <p class="text-sm leading-relaxed text-slate-600">
+	                    {{ selectedFileCannotBeProcessed
+	                      ? 'This PDF cannot be processed in its current state. Choose another PDF or re-export this one and try again.'
+	                      : 'Continue in the right panel to pay and complete the process' }}
+	                  </p>
+	                  <div
+	                    v-if="selectedFileCannotBeProcessed"
+	                    class="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800"
+	                  >
+	                    <div class="flex items-start gap-3">
+	                      <UIcon name="i-heroicons-exclamation-triangle" class="mt-0.5 h-5 w-5 shrink-0 text-rose-600" />
+	                      <div>
+	                        <p class="font-semibold">This file appears damaged or unsupported.</p>
+	                        <p class="mt-1">{{ quoteError }}</p>
+	                      </div>
+	                    </div>
+	                  </div>
+	                  <div
+	                    v-if="isLargeSelectedFile"
+	                    class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+	                  >
+	                    This is a larger file, so it may take a little longer to upload. Keep this page open and we'll automatically start the next step once it's ready.
+	                  </div>
+	                  <div class="mt-4 flex flex-wrap gap-3">
+	                    <UButton
+	                      color="primary"
+	                      class="rounded-xl px-5 font-semibold"
+	                      :disabled="quoteLoading"
+	                      @click="handleSelectedFilePrimaryAction"
+	                    >
+	                      {{ quoteLoading ? 'Checking PDF...' : selectedFileCannotBeProcessed ? 'Choose another PDF' : 'Open setup panel' }}
+	                    </UButton>
+	                    <!-- <UButton variant="soft" color="primary" class="rounded-xl px-5 font-semibold" @click="openFlowPanel('payment')">
+	                      Go to payment
+	                    </UButton> -->
                     <UButton variant="ghost" color="gray" class="rounded-xl px-5" @click="clearFile">
                       Remove file
                     </UButton>
@@ -228,7 +253,7 @@
                 </div>
               </div>
 
-              <div v-if="flow.selectedFile" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <!-- <div v-if="flow.selectedFile" class="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <div class="flex items-center justify-between gap-3">
                   <div class="min-w-0">
                     <p class="truncate text-sm font-medium text-slate-800">{{ flow.selectedFile.name }}</p>
@@ -236,7 +261,7 @@
                   </div>
                   <UIcon name="i-heroicons-document-text" class="h-6 w-6 text-slate-500" />
                 </div>
-              </div>
+              </div> -->
             </div>
 
             <!-- Panel Body -->
@@ -295,14 +320,33 @@
                   <UButton variant="ghost" color="gray" size="sm" icon="i-heroicons-arrow-left" class="-ml-2" @click="goToConfigStep">
                     Back to options
                   </UButton>
-                  <UAlert
-                    color="primary"
-                    icon="i-heroicons-device-phone-mobile"
-                    :title="paymentEnabled ? 'M-Pesa payment required' : 'Payment simulation mode'"
-                    :description="paymentEnabled
-                      ? 'Enter email and phone, then approve the STK prompt on your phone. Processing starts automatically once payment is confirmed.'
-                      : 'Payments are currently disabled in settings. A successful payment will be simulated after ~5 seconds.'"
-                  />
+                  <div class="rounded-2xl border border-primary-200 bg-primary-50 p-4">
+                    <div class="flex items-start gap-3">
+                      <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white ring-1 ring-primary-100">
+                        <img
+                          v-if="paymentEnabled"
+                          :src="mpesaLogo"
+                          alt="M-Pesa logo"
+                          class="h-6 w-auto object-contain"
+                        >
+                        <UIcon
+                          v-else
+                          name="i-heroicons-device-phone-mobile"
+                          class="h-5 w-5 text-primary-700"
+                        />
+                      </div>
+                      <div class="space-y-1">
+                        <p class="text-sm font-semibold text-primary-900">
+                          {{ paymentEnabled ? 'M-Pesa payment required' : 'Payment simulation mode' }}
+                        </p>
+                        <p class="text-sm text-primary-700/90">
+                          {{ paymentEnabled
+                            ? 'Enter email and phone, then approve the STK prompt on your phone. Processing starts automatically once payment is confirmed.'
+                            : 'Payments are currently disabled in settings. A successful payment will be simulated after ~5 seconds.' }}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                   <div
                     v-if="paymentAccountNotice"
                     class="rounded-2xl border border-sky-200 bg-sky-50/90 px-4 py-3 text-sm text-sky-800"
@@ -462,12 +506,19 @@
 
             <!-- Panel Footer -->
             <div class="border-t border-slate-200 bg-white p-6 sm:p-8 shrink-0">
-              <Transition name="panel-fade" mode="out-in">
-                <div v-if="flowStep === 'config'" key="config-footer" class="space-y-3">
-                  <UButton block size="lg" color="primary" class="rounded-xl py-3 text-base font-semibold" @click="goToPaymentStep">
-                    {{ paymentIsFree ? 'Start processing' : 'Next: Payment' }}
-                  </UButton>
-                </div>
+	              <Transition name="panel-fade" mode="out-in">
+	                <div v-if="flowStep === 'config'" key="config-footer" class="space-y-3">
+	                  <UButton
+	                    block
+	                    size="lg"
+	                    color="primary"
+	                    class="rounded-xl py-3 text-base font-semibold"
+	                    :disabled="quoteLoading || !!quoteError || paymentPageCount < 1"
+	                    @click="goToPaymentStep"
+	                  >
+	                    {{ paymentIsFree ? 'Start processing' : 'Next: Payment' }}
+	                  </UButton>
+	                </div>
                 <div v-else-if="flowStep === 'payment'" key="payment-footer" class="space-y-3">
                   <UButton
                     block
@@ -717,6 +768,7 @@ useHead({
 import { useFlowStore, type AppConfig } from '~/stores/flow'
 import { useAuthStore, type AuthUser } from '~/stores/auth'
 import brandLogo from '~/assets/images/3.png'
+import mpesaLogo from '~/assets/images/mpesa-logo.png'
 
 interface JobPayload {
   id: string
@@ -801,6 +853,8 @@ let pusherClient: any = null
 let pusherChannel: any = null
 let uploadStartedAt = 0
 let pdfJsLibPromise: Promise<any> | null = null
+let configLoadPromise: Promise<void> | null = null
+let quoteRequestCounter = 0
 
 const paymentConfirmed = computed(() => !!flow.paymentReference)
 const paymentEnabled = computed(() => flow.config?.enable_payment !== false)
@@ -808,6 +862,7 @@ const paymentSimulationMode = computed(() => !paymentEnabled.value)
 const FREE_AMOUNT_EPSILON = 0.0001
 const paymentIsFree = computed(() => paymentPageCount.value > 0 && paymentAmount.value <= FREE_AMOUNT_EPSILON)
 const paymentRequiresCharge = computed(() => paymentPageCount.value > 0 && paymentAmount.value > FREE_AMOUNT_EPSILON)
+const selectedFileCannotBeProcessed = computed(() => Boolean(flow.selectedFile && quoteError.value && !quoteLoading.value))
 const paymentAmountLabel = computed(() => {
   const currency = flow.config?.currency || 'KES'
   const defaultPrice = Number(flow.config?.price_per_page ?? 5)
@@ -917,23 +972,19 @@ watch(
   { immediate: true }
 )
 
+watch(
+  () => `${auth.token || ''}:${auth.user?.id || ''}`,
+  async (currentKey, previousKey) => {
+    if (currentKey === previousKey) return
+
+    await refreshPricingForAuthChange()
+  }
+)
+
 onMounted(async () => {
   auth.restore()
 
-  try {
-    const res = await $fetch<AppConfig>(`${apiBase()}/api/config`, {
-      headers: authHeaders(),
-    })
-    flow.setConfig(res)
-  } catch {
-    flow.setConfig({
-      enable_payment: true,
-      price_per_page: 5,
-      currency: 'KES',
-      max_file_size_mb: 500,
-      max_pages: 3000,
-    })
-  }
+  await loadAppConfig()
 
   flow.setUploadOptions({ line_interval: getLineIntervalFromDomain() })
 
@@ -958,6 +1009,56 @@ onUnmounted(() => {
 
 function authHeaders() {
   return auth.authHeaders()
+}
+
+function numericConfigValue(value: unknown, fallback: number): number {
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : fallback
+}
+
+function normalizeAppConfig(input?: Partial<AppConfig> | null): AppConfig {
+  return {
+    enable_payment: input?.enable_payment !== false,
+    price_per_page: numericConfigValue(input?.price_per_page, 5),
+    currency: typeof input?.currency === 'string' && input.currency.trim()
+      ? input.currency.trim()
+      : 'KES',
+    max_file_size_mb: numericConfigValue(input?.max_file_size_mb, 500),
+    max_pages: numericConfigValue(input?.max_pages, 3000),
+  }
+}
+
+async function loadAppConfig(force = false) {
+  if (flow.config && !force) return
+  if (configLoadPromise && !force) {
+    await configLoadPromise
+    return
+  }
+
+  configLoadPromise = (async () => {
+    try {
+      const res = await $fetch<AppConfig>(`${apiBase()}/api/config`, {
+        headers: authHeaders(),
+      })
+      flow.setConfig(normalizeAppConfig(res))
+    } catch {
+      flow.setConfig(normalizeAppConfig())
+    } finally {
+      configLoadPromise = null
+    }
+  })()
+
+  await configLoadPromise
+}
+
+async function refreshPricingForAuthChange() {
+  await loadAppConfig(true)
+
+  const file = flow.selectedFile
+  if (!file) return
+  if (flow.paymentPolling || paymentConfirmed.value || uploading.value) return
+
+  await fetchPaymentQuote(file)
 }
 
 function resetUploadMetrics(totalBytes = 0) {
@@ -1138,10 +1239,13 @@ function onDrop(e: DragEvent) {
 }
 
 async function fetchPaymentQuote(file: File) {
+  const requestId = ++quoteRequestCounter
   quoteLoading.value = true
   quoteError.value = null
 
   try {
+    await loadAppConfig()
+
     try {
       const pageCount = await detectPdfPageCount(file)
       const maxPages = Number(flow.config?.max_pages ?? 0)
@@ -1156,12 +1260,16 @@ async function fetchPaymentQuote(file: File) {
 
       const unitPrice = Number(flow.config?.price_per_page ?? 5)
 
+      if (requestId !== quoteRequestCounter) return
+
       paymentPageCount.value = pageCount
       paymentUnitPrice.value = unitPrice
       paymentAmount.value = Number((pageCount * unitPrice).toFixed(2))
       return
     } catch (clientError: any) {
       const quote = await fetchPaymentQuoteFromApi(file)
+
+      if (requestId !== quoteRequestCounter) return
 
       paymentPageCount.value = Number(quote.page_count || 0)
       paymentUnitPrice.value = Number(quote.unit_price || 0)
@@ -1174,6 +1282,8 @@ async function fetchPaymentQuote(file: File) {
       throw clientError
     }
   } catch (e: any) {
+    if (requestId !== quoteRequestCounter) return
+
     paymentPageCount.value = 0
     paymentAmount.value = 0
     paymentUnitPrice.value = 0
@@ -1187,6 +1297,8 @@ async function fetchPaymentQuote(file: File) {
       quoteError.value = e?.data?.message || 'Could not calculate page count and pricing.'
     }
   } finally {
+    if (requestId !== quoteRequestCounter) return
+
     quoteLoading.value = false
   }
 }
@@ -1305,6 +1417,23 @@ function openFlowPanel(step: 'config' | 'payment' | 'progress') {
   flowStep.value = step
   flowPanelOpen.value = true
   if (step === 'config') flow.stage = 'config'
+}
+
+async function replaceSelectedFile() {
+  clearFile()
+  await nextTick()
+  openFilePicker()
+}
+
+function handleSelectedFilePrimaryAction() {
+  if (quoteLoading.value) return
+
+  if (selectedFileCannotBeProcessed.value) {
+    void replaceSelectedFile()
+    return
+  }
+
+  openFlowPanel('config')
 }
 
 function goToPaymentStep() {
@@ -1745,7 +1874,14 @@ async function logout() {
     // ignore logout API errors and clear local state
   }
 
+  clearFile()
   auth.clearAuth()
+  paymentEmail.value = ''
+  paymentPhone.value = ''
+
+  if (process.client) {
+    window.location.reload()
+  }
 }
 
 async function openHistory() {

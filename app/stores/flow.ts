@@ -44,7 +44,6 @@ export const useFlowStore = defineStore('flow', {
   actions: {
     setConfig(config: AppConfig) {
       this.config = config
-      this.stage = 'upload'
     },
     setPaymentReference(ref: string) {
       this.paymentReference = ref
