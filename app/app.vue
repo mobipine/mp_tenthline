@@ -498,7 +498,7 @@
                     </UButton>
                   </div>
                   <div v-else class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
-                    Start processing to see realtime progress here.
+                    Start processing to see progress here.
                   </div>
                 </div>
               </Transition>
@@ -911,7 +911,7 @@ const flowPanelHeadline = computed(() => {
   if (flow.stage === 'uploading') return 'Uploading your PDF'
   if (flow.stage === 'download') return 'Download your processed PDF'
   if (flow.stage === 'error') return 'Processing error'
-  return 'Realtime processing status'
+  return 'Processing status'
 })
 
 const stepNumber = computed(() => {
