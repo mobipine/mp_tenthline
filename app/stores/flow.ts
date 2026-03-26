@@ -33,6 +33,11 @@ export const useFlowStore = defineStore('flow', {
       eta_seconds: number | null
       error_message: string | null
       download_url?: string
+      processing_stage?: string | null
+      processing_label?: string | null
+      processing_message?: string | null
+      processing_detail?: string | null
+      updated_at?: string | null
     } | null,
     uploadOptions: {
       margin: 'right' as const,

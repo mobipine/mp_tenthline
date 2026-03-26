@@ -451,23 +451,29 @@
                       color="primary"
                       icon="i-heroicons-sparkles"
                       title="Your document is being processed"
-                      description=""
+                      :description="processingMessage"
                     />
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
                       <div class="mb-3 flex items-center justify-between gap-3">
-                        <p class="text-sm font-semibold text-slate-900">Adding line numbers</p>
+                        <div>
+                          <p class="text-sm font-semibold text-slate-900">{{ processingLabel }}</p>
+                          <p v-if="processingDetail" class="mt-1 text-xs text-slate-500">{{ processingDetail }}</p>
+                        </div>
                         <span class="text-sm font-semibold text-primary-700">{{ progressPercentage }}%</span>
                       </div>
                       <UProgress :model-value="progressPercentage" :max="100" size="xl" />
                       <div class="mt-3 flex flex-wrap gap-2 text-xs text-slate-600">
                         <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200">
-                          Page {{ flow.job?.processed_pages ?? 0 }} / {{ flow.job?.total_pages ?? 0 }}
+                          {{ processingPageLabel }}
                         </span>
-                        <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200" v-if="flow.job?.eta_seconds !== null">
-                          ETA {{ formatEta(flow.job?.eta_seconds) }}
+                        <span v-if="processingIsOcr" class="rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 font-medium text-primary-700">
+                          Careful review in progress
                         </span>
-                        <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200" v-else>
-                          ETA calculating...
+                        <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200">
+                          {{ processingEtaLabel }}
+                        </span>
+                        <span v-if="processingHeartbeatLabel" class="rounded-full bg-white px-2.5 py-1 border border-slate-200">
+                          {{ processingHeartbeatLabel }}
                         </span>
                       </div>
                     </div>
@@ -779,6 +785,11 @@ interface JobPayload {
   eta_seconds: number | null
   error_message: string | null
   download_url?: string | null
+  processing_stage?: string | null
+  processing_label?: string | null
+  processing_message?: string | null
+  processing_detail?: string | null
+  updated_at?: string | null
 }
 
 interface HistoryJob {
@@ -903,6 +914,47 @@ const progressPercentage = computed(() => {
   const raw = Number(flow.job?.progress ?? 0)
   if (!Number.isFinite(raw)) return 0
   return Math.max(0, Math.min(100, Math.round(raw)))
+})
+
+const processingLabel = computed(() => {
+  const label = String(flow.job?.processing_label || '').trim()
+  return label || 'Adding line numbers'
+})
+
+const processingMessage = computed(() => {
+  const message = String(flow.job?.processing_message || '').trim()
+  return message || 'We are preparing your document for numbering.'
+})
+
+const processingDetail = computed(() => {
+  const detail = String(flow.job?.processing_detail || '').trim()
+  return detail || null
+})
+
+const processingStage = computed(() => String(flow.job?.processing_stage || '').trim())
+const processingIsOcr = computed(() => processingStage.value.startsWith('ocr_'))
+
+const processingPageLabel = computed(() => {
+  const processed = Number(flow.job?.processed_pages ?? 0)
+  const total = Number(flow.job?.total_pages ?? 0)
+
+  if (processed > 0 && total > 0) return `Page ${processed} / ${total}`
+  if (total > 0) return `${total} pages detected`
+  return 'Preparing pages...'
+})
+
+const processingEtaLabel = computed(() => {
+  if (flow.job?.eta_seconds !== null && flow.job?.eta_seconds !== undefined) {
+    return `ETA ${formatEta(flow.job?.eta_seconds)}`
+  }
+
+  if (processingIsOcr.value) return 'This careful review step can take a little longer'
+  return 'ETA calculating...'
+})
+
+const processingHeartbeatLabel = computed(() => {
+  const label = formatRecentUpdate(flow.job?.updated_at || null)
+  return label ? `Last update ${label}` : null
 })
 
 const flowPanelHeadline = computed(() => {
@@ -1329,6 +1381,22 @@ function formatEta(seconds: number | null | undefined): string {
   return `${mins}m ${secs}s`
 }
 
+function formatRecentUpdate(value: string | null | undefined): string | null {
+  if (!value) return null
+
+  const timestamp = new Date(value)
+  if (Number.isNaN(timestamp.getTime())) return null
+
+  const secondsAgo = Math.max(0, Math.floor((Date.now() - timestamp.getTime()) / 1000))
+  if (secondsAgo < 5) return 'just now'
+  if (secondsAgo < 60) return `${secondsAgo}s ago`
+
+  const minutesAgo = Math.floor(secondsAgo / 60)
+  if (minutesAgo < 60) return `${minutesAgo}m ago`
+
+  return formatDate(value)
+}
+
 function statusBadgeClass(status: string): string {
   if (status === 'completed') return 'border-primary-200 bg-primary-50 text-primary-800'
   if (status === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700'
@@ -1682,11 +1750,16 @@ async function submitUpload() {
     flow.setJobId(res.job_id)
     flow.setJob({
       status: 'processing',
-      progress: 0,
+      progress: 3,
       processed_pages: 0,
       total_pages: paymentPageCount.value,
       eta_seconds: null,
       error_message: null,
+      processing_stage: 'analyzing_document',
+      processing_label: 'Analyzing document',
+      processing_message: 'We are reading the PDF and preparing it for numbering.',
+      processing_detail: paymentPageCount.value > 0 ? `${paymentPageCount.value} pages detected` : null,
+      updated_at: new Date().toISOString(),
     })
     goToProgressStep('processing')
 
