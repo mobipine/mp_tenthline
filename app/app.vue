@@ -172,7 +172,7 @@
 	                      :disabled="quoteLoading"
 	                      @click="handleSelectedFilePrimaryAction"
 	                    >
-	                      {{ quoteLoading ? 'Checking PDF...' : selectedFileCannotBeProcessed ? 'Choose another PDF' : 'Open setup panel' }}
+	                      {{ quoteLoading ? 'Thinking about your PDF...' : selectedFileCannotBeProcessed ? 'Choose another PDF' : 'Open setup panel' }}
 	                    </UButton>
 	                    <!-- <UButton variant="soft" color="primary" class="rounded-xl px-5 font-semibold" @click="openFlowPanel('payment')">
 	                      Go to payment
@@ -241,7 +241,7 @@
                   <span
                     class="inline-flex min-w-[150px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700"
                   >
-                    {{ flow.stage === 'uploading' ? 'Uploading file' : flow.stage === 'download' ? 'Completed' : paymentConfirmed ? 'Payment confirmed' : paymentIsFree ? 'No payment required' : 'Payment required' }}
+                    {{ flow.stage === 'uploading' ? 'Uploading file' : flow.stage === 'processing' ? 'AI thinking' : flow.stage === 'download' ? 'Completed' : paymentConfirmed ? 'Payment confirmed' : paymentIsFree ? 'No payment required' : 'Payment required' }}
                   </span>
                   <!-- Close button -->
                   <button
@@ -275,7 +275,7 @@
                   <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 space-y-1.5">
                     <p>
                       Pages detected:
-                      <strong class="text-slate-900">{{ paymentPageCount > 0 ? paymentPageCount : quoteLoading ? 'Calculating...' : '--' }}</strong>
+                      <strong class="text-slate-900">{{ paymentPageCount > 0 ? paymentPageCount : quoteLoading ? 'Thinking...' : '--' }}</strong>
                     </p>
                     <p>
                       Price per page:
@@ -290,7 +290,7 @@
                   <UAlert
                     v-else-if="quoteLoading"
                     color="primary"
-                    title="Reading PDF pages..."
+                    title="Thinking through your PDF..."
                   />
                   <div
                     v-if="isLargeSelectedFile"
@@ -450,7 +450,7 @@
                     <UAlert
                       color="primary"
                       icon="i-heroicons-sparkles"
-                      title="Your document is being processed"
+                      title="AI is thinking through your document"
                       :description="processingMessage"
                     />
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -467,7 +467,7 @@
                           {{ processingPageLabel }}
                         </span>
                         <span v-if="processingIsOcr" class="rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 font-medium text-primary-700">
-                          Careful review in progress
+                          AI is reading scanned text
                         </span>
                         <span class="rounded-full bg-white px-2.5 py-1 border border-slate-200">
                           {{ processingEtaLabel }}
@@ -918,12 +918,12 @@ const progressPercentage = computed(() => {
 
 const processingLabel = computed(() => {
   const label = String(flow.job?.processing_label || '').trim()
-  return label || 'Adding line numbers'
+  return label || 'AI is preparing your line numbers'
 })
 
 const processingMessage = computed(() => {
   const message = String(flow.job?.processing_message || '').trim()
-  return message || 'We are preparing your document for numbering.'
+  return message || 'Our AI is thinking through your document before placing the line numbers.'
 })
 
 const processingDetail = computed(() => {
@@ -940,7 +940,7 @@ const processingPageLabel = computed(() => {
 
   if (processed > 0 && total > 0) return `Page ${processed} / ${total}`
   if (total > 0) return `${total} pages detected`
-  return 'Preparing pages...'
+  return 'AI is preparing pages...'
 })
 
 const processingEtaLabel = computed(() => {
@@ -948,8 +948,8 @@ const processingEtaLabel = computed(() => {
     return `ETA ${formatEta(flow.job?.eta_seconds)}`
   }
 
-  if (processingIsOcr.value) return 'This careful review step can take a little longer'
-  return 'ETA calculating...'
+  if (processingIsOcr.value) return 'The AI is carefully reading scanned pages, so this can take a little longer'
+  return 'ETA thinking...'
 })
 
 const processingHeartbeatLabel = computed(() => {
@@ -963,7 +963,7 @@ const flowPanelHeadline = computed(() => {
   if (flow.stage === 'uploading') return 'Uploading your PDF'
   if (flow.stage === 'download') return 'Download your processed PDF'
   if (flow.stage === 'error') return 'Processing error'
-  return 'Processing status'
+  return 'AI thinking'
 })
 
 const stepNumber = computed(() => {
@@ -1756,8 +1756,8 @@ async function submitUpload() {
       eta_seconds: null,
       error_message: null,
       processing_stage: 'analyzing_document',
-      processing_label: 'Analyzing document',
-      processing_message: 'We are reading the PDF and preparing it for numbering.',
+      processing_label: 'AI is thinking through your document',
+      processing_message: 'Our AI is reading the PDF and preparing the line numbering.',
       processing_detail: paymentPageCount.value > 0 ? `${paymentPageCount.value} pages detected` : null,
       updated_at: new Date().toISOString(),
     })
