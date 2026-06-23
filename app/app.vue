@@ -8,7 +8,7 @@
             10
           </span> -->
           <div class="leading-tight h-full">
-            <!-- <p class="text-sm lg:text-[16px] font-semibold tracking-tight text-slate-900">LegalLine</p> -->
+            <!-- <p class="text-sm lg:text-[16px] font-semibold tracking-tight text-slate-900">TenthLine</p> -->
             <!-- <p class="text-sm lg:text-[16px] font-medium uppercase tracking-[0.12em] text-slate-500">Tenth Lining</p> -->
              <img
               :src="brandLogo"

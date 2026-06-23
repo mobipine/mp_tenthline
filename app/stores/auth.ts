@@ -7,8 +7,8 @@ export interface AuthUser {
   phone?: string | null
 }
 
-const TOKEN_KEY = 'legalline_auth_token'
-const USER_KEY = 'legalline_auth_user'
+const TOKEN_KEY = 'tenthline_auth_token'
+const USER_KEY = 'tenthline_auth_user'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({

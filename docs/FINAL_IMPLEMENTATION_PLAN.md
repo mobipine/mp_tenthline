@@ -1,6 +1,6 @@
 # Legal PDF Line Numbering — Final Implementation Plan
 
-**Document purpose:** Production-ready implementation plan for the Legal PDF Line Numbering SaaS (Nuxt frontend `legalline` + Laravel backend `legalline-api`), including additional recommendations, full stack choices with rationale, **M-Pesa pay-before-upload revenue flow**, **Laravel Filament 3 admin panel** (jobs, payments, settings such as `enable_payment`), **brand (blue, black, grey, white + Outfit font)**, **one-page Nuxt experience** (upload → processing → download on a single page), and a phased plan to ship a market-ready product.
+**Document purpose:** Production-ready implementation plan for the Legal PDF Line Numbering SaaS (Nuxt frontend `tenthline` + Laravel backend `tenthline-api`), including additional recommendations, full stack choices with rationale, **M-Pesa pay-before-upload revenue flow**, **Laravel Filament 3 admin panel** (jobs, payments, settings such as `enable_payment`), **brand (blue, black, grey, white + Outfit font)**, **one-page Nuxt experience** (upload → processing → download on a single page), and a phased plan to ship a market-ready product.
 
 ---
 
@@ -74,7 +74,7 @@ These recommendations extend the original [legal_pdf_line_numbering_implementati
 
 ## Part 2 — Full Stack Selection and Rationale
 
-### 2.1 Frontend — Nuxt (legalline)
+### 2.1 Frontend — Nuxt (tenthline)
 
 **One-page experience:** The Nuxt app is a **single page**. The user uploads the file, sees processing (progress, ETA) on the same page, and receives a download button when done — no navigation or separate routes for the main flow. Payment (when enabled), dropzone, numbering options, progress, and download all live in one view; only the visible section changes (e.g. dropzone + options → progress → download button) via component state. Everything sits on the one page.
 
@@ -146,7 +146,7 @@ The upload experience should feel premium and trustworthy so users are confident
 
 Pair the dropzone with payment (when enabled) and numbering options on the **same single page**; after submit, show processing then download in place so the full flow (Pay → **Upload** → Configure → Process → Download) stays on one page and feels cohesive and professional.
 
-### 2.2 Backend — Laravel (legalline-api)
+### 2.2 Backend — Laravel (tenthline-api)
 
 
 | Layer                     | Choice                                              | Rationale                                                                         |
@@ -263,7 +263,7 @@ Delete both after download or after 24h cron.
 
 ### 3.2 Phase 1 — MVP (Weeks 1–4)
 
-#### Backend (legalline-api)
+#### Backend (tenthline-api)
 
 1. **Project setup**
   - Laravel 11, Redis, Horizon; migrations: `pdf_jobs` (with `error_message`, `output_path`, `payment_id`), `payments`, Spatie settings table.
@@ -293,11 +293,11 @@ Delete both after download or after 24h cron.
   - Resources: **PdfJob** (table: job id, filename, status, progress, created_at; filters by status; link to payment); **Payment** (table: id, amount, phone, reference, status, created_at; filters by status).
   - Settings page (Spatie): `enable_payment`, `price_per_document`, `currency`, `max_file_size_mb`, `max_pages`; optional: branding, maintenance mode.
 
-#### Frontend (legalline) — one page only
+#### Frontend (tenthline) — one page only
 
 1. **Setup**
   - Nuxt 3/4, Pinia, Tailwind, Nuxt UI (or chosen component set). **Single route:** one page that contains the entire flow.
-  - Environment: `NUXT_PUBLIC_API_BASE=http://legalline-api.test` (or production API URL).
+  - Environment: `NUXT_PUBLIC_API_BASE=http://tenthline-api.test` (or production API URL).
   - Brand: Outfit font, blue/black/grey/white (see §2.1.1).
 2. **Payment (when enable_payment is true) — same page**
   - On load: fetch `GET /api/config`; if `enable_payment` show "Pay KES {price} to continue" and phone input at top of the page.
@@ -361,8 +361,8 @@ Delete both after download or after 24h cron.
 
 ### 3.7 Project Layout Assumption
 
-- **Frontend:** Nuxt app lives in this repo root (`legalline` — `package.json`, `app/`, `nuxt.config.ts`). The main user experience is a **single page** (e.g. index or default route) with the full flow.
-- **Backend:** Laravel app can live in a sibling directory `legalline-api/` or in a separate repo; ensure CORS and `NUXT_PUBLIC_API_BASE` point to the Laravel API URL in each environment.
+- **Frontend:** Nuxt app lives in this repo root (`tenthline` — `package.json`, `app/`, `nuxt.config.ts`). The main user experience is a **single page** (e.g. index or default route) with the full flow.
+- **Backend:** Laravel app can live in a sibling directory `tenthline-api/` or in a separate repo; ensure CORS and `NUXT_PUBLIC_API_BASE` point to the Laravel API URL in each environment.
 
 ---
 

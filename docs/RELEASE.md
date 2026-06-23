@@ -1,6 +1,6 @@
-# LegalLine — Release & Deployment Guide
+# TenthLine — Release & Deployment Guide
 
-This document covers what you need to run and release the LegalLine MVP: environment variables, credentials, and deployment steps for both the Laravel API (`legalline-api`) and the Nuxt frontend (`legalline`).
+This document covers what you need to run and release the TenthLine MVP: environment variables, credentials, and deployment steps for both the Laravel API (`tenthline-api`) and the Nuxt frontend (`tenthline`).
 
 ---
 
@@ -42,12 +42,12 @@ Horizon requires both the **Redis server** and the **PHP Redis extension**. On m
 
 ---
 
-## 2. Backend (legalline-api) — Environment & Credentials
+## 2. Backend (tenthline-api) — Environment & Credentials
 
 ### 2.1 Copy environment file
 
 ```bash
-cd legalline-api
+cd tenthline-api
 cp .env.example .env
 php artisan key:generate
 ```
@@ -56,12 +56,12 @@ php artisan key:generate
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `APP_NAME` | Application name | `LegalLine API` |
+| `APP_NAME` | Application name | `TenthLine API` |
 | `APP_ENV` | `local` / `production` | `production` |
 | `APP_DEBUG` | `true` / `false` | `false` |
-| `APP_URL` | Full URL of the API (no trailing slash) | `https://api.legalline.example.com` |
+| `APP_URL` | Full URL of the API (no trailing slash) | `https://api.tenthline.example.com` |
 | `DB_CONNECTION` | `sqlite` or `mysql` / `pgsql` | `mysql` |
-| `DB_DATABASE` | Database name | `legalline` |
+| `DB_DATABASE` | Database name | `tenthline` |
 | `DB_USERNAME` | DB user | — |
 | `DB_PASSWORD` | DB password | — |
 | `QUEUE_CONNECTION` | Must be `redis` for Horizon | `redis` |
@@ -80,7 +80,7 @@ Get these from [Safaricom Daraja](https://developer.safaricom.co.ke/).
 | `MPESA_CONSUMER_SECRET` | OAuth consumer secret | — |
 | `MPESA_SHORTCODE` | Till / Paybill number | — |
 | `MPESA_PASSKEY` | Lipa Na M-Pesa passkey | — |
-| `MPESA_CALLBACK_BASE_URL` | Base URL for callbacks (must be HTTPS in production) | `https://api.legalline.example.com` |
+| `MPESA_CALLBACK_BASE_URL` | Base URL for callbacks (must be HTTPS in production) | `https://api.tenthline.example.com` |
 | `MPESA_ENVIRONMENT` | `sandbox` or `production` | `sandbox` |
 
 **Notes:**
@@ -108,7 +108,7 @@ Then in code, use the same disk for storing `pdf-jobs/{id}/input.pdf` and `outpu
 ## 3. Backend — First-time setup
 
 ```bash
-cd legalline-api
+cd tenthline-api
 composer install --no-dev --optimize-autoloader   # production
 # or
 composer install   # development
@@ -138,7 +138,7 @@ Then go to `https://your-api-domain/admin` and log in.
 ### 3.2 Configure app settings in admin
 
 1. Log in to Filament at `/admin`.
-2. Open **LegalLine → App Settings**.
+2. Open **TenthLine → App Settings**.
 3. Set:
    - **Require payment before upload**: On to use M-Pesa; Off for free/testing.
    - **Price per document**, **Currency**, **Max file size (MB)**, **Max pages**.
@@ -176,7 +176,7 @@ You can view supervisors, pending/completed/failed jobs, and metrics. In **local
 Add a cron entry to delete old job files (e.g. older than 24 hours):
 
 ```bash
-0 * * * * cd /path/to/legalline-api && php artisan schedule:run
+0 * * * * cd /path/to/tenthline-api && php artisan schedule:run
 ```
 
 Implement a scheduled command that deletes `storage/app/pdf-jobs/{id}/*` for jobs older than 24h (and optionally mark them in DB). Register it in `app/Console/Kernel.php` or use the scheduler.
@@ -186,13 +186,13 @@ Implement a scheduled command that deletes `storage/app/pdf-jobs/{id}/*` for job
 Allow the frontend origin in Laravel. In `config/cors.php` (or `bootstrap/app.php` middleware), allow your Nuxt origin, e.g.:
 
 - Development: `http://localhost:3000`
-- Production: `https://legalline.example.com`
+- Production: `https://tenthline.example.com`
 
 If `config/cors.php` exists, set `allowed_origins` accordingly. Laravel 11+ may use `HandleCors`; ensure your frontend URL is allowed.
 
 ---
 
-## 5. Frontend (legalline) — Environment
+## 5. Frontend (tenthline) — Environment
 
 ### 5.1 Environment variables
 
@@ -200,7 +200,7 @@ Create `.env` in the Nuxt project root (same folder as `package.json`):
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `NUXT_PUBLIC_API_BASE` | Full URL of the Laravel API (no trailing slash) | `https://api.legalline.example.com` |
+| `NUXT_PUBLIC_API_BASE` | Full URL of the Laravel API (no trailing slash) | `https://api.tenthline.example.com` |
 
 **Development:**
 
@@ -211,7 +211,7 @@ NUXT_PUBLIC_API_BASE=http://localhost:8000
 **Production:**
 
 ```env
-NUXT_PUBLIC_API_BASE=https://api.legalline.example.com
+NUXT_PUBLIC_API_BASE=https://api.tenthline.example.com
 ```
 
 ### 5.2 Build and run
@@ -228,7 +228,7 @@ npm run dev      # development
 
 ## 6. Deployment checklist
 
-### Backend (legalline-api)
+### Backend (tenthline-api)
 
 - [ ] `.env` configured (APP_URL, DB_*, REDIS_*, QUEUE_CONNECTION=redis)
 - [ ] M-Pesa env vars set (if using payment); callback URL reachable (HTTPS in prod)
@@ -238,7 +238,7 @@ npm run dev      # development
 - [ ] Optional: S3 configured and used for `pdf-jobs`; cleanup cron for old files
 - [ ] CORS allows the Nuxt frontend origin
 
-### Frontend (legalline)
+### Frontend (tenthline)
 
 - [ ] `NUXT_PUBLIC_API_BASE` points to the deployed API URL
 - [ ] `npm run build` succeeds; serve the output (e.g. `output/public` or your host’s static build)
