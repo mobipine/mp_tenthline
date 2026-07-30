@@ -24,9 +24,12 @@
       </div>
 
       <!-- Content -->
-      <div v-else-if="content" class="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12">
+      <div v-else-if="content" class="lg:grid lg:grid-cols-[minmax(0,1fr)_220px] lg:gap-12">
+        <!-- Article -->
+        <article ref="articleEl" class="legal-content max-w-3xl" v-html="content" />
+
         <!-- Table of contents -->
-        <nav v-if="toc.length >= 2" class="mb-10 lg:mb-0" aria-label="Table of contents">
+        <nav v-if="toc.length >= 2" class="order-first mb-10 lg:order-0 lg:mb-0" aria-label="Table of contents">
           <div class="lg:sticky lg:top-24">
             <p class="text-xs font-semibold uppercase tracking-wider text-slate-400">On this page</p>
             <ul class="mt-3 space-y-1 border-l border-slate-200">
@@ -45,10 +48,6 @@
             </ul>
           </div>
         </nav>
-        <div v-else aria-hidden="true" class="hidden lg:block" />
-
-        <!-- Article -->
-        <article ref="articleEl" class="legal-content max-w-3xl" v-html="content" />
       </div>
 
       <!-- Empty -->
@@ -57,7 +56,7 @@
       </div>
 
       <!-- Footer links -->
-      <div class="mt-14 flex max-w-3xl flex-wrap gap-x-6 gap-y-2 border-t border-slate-200 pt-8 text-sm text-slate-500 lg:ml-[268px]">
+      <div class="mt-14 flex max-w-3xl flex-wrap gap-x-6 gap-y-2 border-t border-slate-200 pt-8 text-sm text-slate-500">
         <NuxtLink :to="siblingTo" class="inline-flex items-center gap-1 transition-colors hover:text-primary-600">
           <UIcon name="i-heroicons-document-text" class="h-4 w-4" />
           {{ siblingLabel }}
