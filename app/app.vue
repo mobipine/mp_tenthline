@@ -193,11 +193,11 @@
                 </li>
                 <li class="flex gap-3">
                   <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">2</span>
-                  <span>Pay using M-Pesa</span>
+                  <span>We process your document and generate a quality report</span>
                 </li>
                 <li class="flex gap-3">
                   <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">3</span>
-                  <span>Download your processed PDF</span>
+                  <span>Review the report, pay via M-Pesa, and download</span>
                 </li>
               </ol>
             </div>
@@ -1469,6 +1469,7 @@ function statusBadgeClass(status: string): string {
   if (status === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700'
   if (status === 'deleted') return 'border-slate-200 bg-slate-100 text-slate-700'
   if (status === 'processing') return 'border-amber-200 bg-amber-50 text-amber-700'
+  if (status === 'awaiting_payment') return 'border-violet-200 bg-violet-50 text-violet-700'
   return 'border-primary-200 bg-primary-50 text-primary-800'
 }
 
