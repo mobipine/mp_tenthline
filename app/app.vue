@@ -18,38 +18,39 @@
           </div>
         </NuxtLink>
 
-        <nav class="hidden md:flex items-center gap-1 text-sm text-slate-600">
-          <NuxtLink to="/" class="rounded-lg px-3 py-1.5 hover:bg-slate-100 hover:text-slate-900 transition-colors" exact-active-class="bg-slate-100 text-slate-900 font-medium">
+        <nav class="hidden md:flex items-center gap-1">
+          <NuxtLink to="/" class="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors" exact-active-class="bg-slate-100 text-slate-900">
             Home
           </NuxtLink>
-          <NuxtLink to="/support" class="rounded-lg px-3 py-1.5 hover:bg-slate-100 hover:text-slate-900 transition-colors" active-class="bg-slate-100 text-slate-900 font-medium">
+          <NuxtLink to="/support" class="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors" active-class="bg-slate-100 text-slate-900">
             Support
           </NuxtLink>
-          <NuxtLink to="/terms" class="rounded-lg px-3 py-1.5 hover:bg-slate-100 hover:text-slate-900 transition-colors" active-class="bg-slate-100 text-slate-900 font-medium">
+          <NuxtLink to="/terms" class="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors" active-class="bg-slate-100 text-slate-900">
             Terms
           </NuxtLink>
-          <NuxtLink to="/privacy" class="rounded-lg px-3 py-1.5 hover:bg-slate-100 hover:text-slate-900 transition-colors" active-class="bg-slate-100 text-slate-900 font-medium">
+          <NuxtLink to="/privacy" class="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors" active-class="bg-slate-100 text-slate-900">
             Privacy
           </NuxtLink>
         </nav>
 
-        <div class="flex items-center gap-2 sm:gap-3">
+        <div class="flex items-center gap-2 sm:gap-2.5">
           <template v-if="auth.isAuthenticated && auth.user">
-            <span class="hidden rounded-full bg-slate-100 px-3 py-1 text-[14px] font-semibold text-slate-700 sm:inline-flex">
+            <span class="hidden items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 lg:inline-flex">
+              <UIcon name="i-heroicons-user-circle" class="h-4 w-4 text-slate-400" />
               {{ auth.user.email }}
             </span>
-            <UButton size="lg" variant="soft" color="primary" class="rounded-lg text-sm lg:text-[16px]" @click="openHistory">
+            <UButton size="md" variant="soft" color="primary" class="rounded-lg text-sm font-medium" @click="openHistory">
               My documents
             </UButton>
-            <UButton size="lg" variant="ghost" color="gray" class="rounded-lg text-sm lg:text-[16px]" @click="logout">
+            <UButton size="md" variant="ghost" color="gray" class="rounded-lg text-sm font-medium" @click="logout">
               Logout
             </UButton>
           </template>
           <template v-else>
-            <UButton size="lg" variant="ghost" color="gray" class="rounded-lg text-sm lg:text-[16px]" @click="openAuthModal('login')">
+            <UButton size="md" variant="ghost" color="gray" class="rounded-lg text-sm font-medium" @click="openAuthModal('login')">
               Login
             </UButton>
-            <UButton size="lg" color="primary" class="rounded-lg text-sm lg:text-[16px]" @click="openAuthModal('register')">
+            <UButton size="md" color="primary" class="rounded-lg text-sm font-medium" @click="openAuthModal('register')">
               Sign up
             </UButton>
           </template>
@@ -771,7 +772,7 @@
       </template>
     </UModal>
 
-    <USlideover :open="historyOpen" side="right" title="My previous jobs" class="!w-full sm:!max-w-xl" @update:open="historyOpen = $event">
+    <USlideover :open="historyOpen" side="right" title="My previous jobs" class="w-full! sm:max-w-xl!" @update:open="historyOpen = $event">
       <template #content>
         <div class="flex h-full flex-col bg-white">
           <div class="border-b border-slate-200 p-6 sm:p-8">
@@ -1739,10 +1740,10 @@ function startPaymentPolling(reference: string) {
         flow.paymentPolling = false
         paymentStatusMessage.value = 'Payment confirmed. Your document is ready.'
         stopPaymentPolling()
-        // Poll for job completion after payment
         if (flow.jobId) {
           await fetchJobSnapshot(flow.jobId)
         }
+        flowStep.value = 'progress'
         if (flow.stage !== 'download') {
           startJobPolling()
         }

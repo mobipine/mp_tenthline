@@ -8,6 +8,7 @@ export default defineNuxtConfig({
     head: {
       title: 'Automatically apply tenth-line referencing to legal PDFs.',
       link: [
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },
         {
