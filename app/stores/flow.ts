@@ -1,11 +1,11 @@
 import { defineStore } from 'pinia'
 
 export type Stage =
-  | 'upload'      // no file yet
-  | 'config'      // file selected, offcanvas open (config panel)
-  | 'payment'     // user clicked Next, payment panel (email, phone, pay)
+  | 'upload'           // no file yet
+  | 'config'           // file selected, config panel open
   | 'uploading'
   | 'processing'
+  | 'awaiting_payment' // processing done, report ready, awaiting payment
   | 'download'
   | 'error'
 
@@ -17,14 +17,27 @@ export interface AppConfig {
   max_pages: number
 }
 
+export interface ProcessingReport {
+  id: string
+  uploaded_pages: number
+  successful_pages: number
+  low_confidence_pages: number
+  failed_pages: number
+  payable_pages: number
+  unit_price: number
+  total_amount: number
+  currency: string
+  bill_low_confidence_pages: boolean
+  created_at: string | null
+}
+
 export const useFlowStore = defineStore('flow', {
   state: () => ({
     config: null as AppConfig | null,
     stage: 'upload' as Stage,
-    paymentReference: null as string | null,
-    paymentPolling: false,
     selectedFile: null as File | null,
     jobId: null as string | null,
+    paymentDeadlineAt: null as string | null,
     job: null as {
       status: string
       progress: number
@@ -32,13 +45,19 @@ export const useFlowStore = defineStore('flow', {
       total_pages: number
       eta_seconds: number | null
       error_message: string | null
+      error_code: string | null
+      payable_pages: number | null
+      payment_deadline_at: string | null
       download_url?: string
+      report_url?: string | null
       processing_stage?: string | null
       processing_label?: string | null
       processing_message?: string | null
       processing_detail?: string | null
       updated_at?: string | null
     } | null,
+    processingReport: null as ProcessingReport | null,
+    paymentPolling: false,
     uploadOptions: {
       margin: 'right' as const,
       line_interval: 10 as 5 | 10,
@@ -50,9 +69,6 @@ export const useFlowStore = defineStore('flow', {
     setConfig(config: AppConfig) {
       this.config = config
     },
-    setPaymentReference(ref: string) {
-      this.paymentReference = ref
-    },
     setSelectedFile(file: File | null) {
       this.selectedFile = file
       if (file) this.stage = 'config'
@@ -61,21 +77,23 @@ export const useFlowStore = defineStore('flow', {
     setUploadOptions(opts: Partial<typeof this.uploadOptions>) {
       Object.assign(this.uploadOptions, opts)
     },
-    goToPaymentStep() {
-      this.stage = 'payment'
-    },
     setJobId(id: string) {
       this.jobId = id
       this.stage = 'processing'
       this.job = null
+      this.processingReport = null
     },
     setJob(job: typeof this.job) {
       this.job = job
       if (job?.status === 'completed') this.stage = 'download'
+      if (job?.status === 'awaiting_payment') this.stage = 'awaiting_payment'
       if (job?.status === 'failed') {
         this.stage = 'error'
         this.error = job.error_message || 'Processing failed'
       }
+    },
+    setProcessingReport(report: ProcessingReport) {
+      this.processingReport = report
     },
     setError(message: string) {
       this.error = message
@@ -83,10 +101,12 @@ export const useFlowStore = defineStore('flow', {
     },
     reset() {
       this.stage = 'upload'
-      this.paymentReference = null
       this.selectedFile = null
       this.jobId = null
       this.job = null
+      this.processingReport = null
+      this.paymentDeadlineAt = null
+      this.paymentPolling = false
       this.error = null
       this.uploadOptions = {
         margin: 'right',
