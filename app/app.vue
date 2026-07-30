@@ -193,11 +193,11 @@
                 </li>
                 <li class="flex gap-3">
                   <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">2</span>
-                  <span>Pay using M-Pesa</span>
+                  <span>We process your document and generate a quality report</span>
                 </li>
                 <li class="flex gap-3">
                   <span class="mt-0.5 inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-xs font-semibold text-primary-700">3</span>
-                  <span>Download your processed PDF</span>
+                  <span>Review the report, pay via M-Pesa, and download</span>
                 </li>
               </ol>
             </div>
@@ -241,7 +241,7 @@
                   <span
                     class="inline-flex min-w-[150px] items-center justify-center rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700"
                   >
-                    {{ flow.stage === 'uploading' ? 'Uploading file' : flow.stage === 'processing' ? 'AI thinking' : flow.stage === 'download' ? 'Completed' : paymentConfirmed ? 'Payment confirmed' : paymentIsFree ? 'No payment required' : 'Payment required' }}
+                    {{ flow.stage === 'uploading' ? 'Uploading file' : flow.stage === 'processing' ? 'AI thinking' : flow.stage === 'download' ? 'Completed' : flow.stage === 'awaiting_payment' ? 'Awaiting payment' : 'Payment required' }}
                   </span>
                   <!-- Close button -->
                   <button
@@ -270,7 +270,7 @@
                 <!-- Step 1: Config (options fixed: right margin, font 8pt; line interval from domain) -->
                 <div v-if="flowStep === 'config'" key="config" class="space-y-6">
                   <p class="text-sm leading-relaxed text-slate-600">
-                    Line numbers are added on the right margin. Review the quote below and {{ paymentIsFree ? 'start processing.' : 'proceed to payment.' }}
+                    Line numbers are added on the right margin. Upload your PDF for processing — you'll review the processing report and pay only for successfully processed pages.
                   </p>
                   <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 space-y-1.5">
                     <p>
@@ -282,9 +282,10 @@
                       <strong class="text-slate-900">{{ paymentUnitPriceLabel }}</strong>
                     </p>
                     <p>
-                      Amount due:
+                      Estimated amount:
                       <strong class="text-slate-900">{{ paymentAmountLabel }}</strong>
                     </p>
+                    <p class="text-xs text-slate-500 italic">Exact amount is calculated after processing based on successful pages.</p>
                   </div>
                   <UAlert v-if="quoteError" color="error" :title="quoteError" />
                   <UAlert
@@ -315,7 +316,54 @@
                   </div>
                 </div>
 
-                <!-- Step 2: Payment -->
+                <!-- Step 3: Processing Report (awaiting_payment) -->
+                <div v-else-if="flowStep === 'report'" key="report" class="space-y-6">
+                  <div class="rounded-2xl border border-primary-200 bg-primary-50 p-5">
+                    <p class="text-sm font-semibold text-primary-900">Processing complete</p>
+                    <p class="mt-1 text-sm text-primary-700/90">
+                      Your PDF has been processed. Review the report below and complete payment to download.
+                    </p>
+                  </div>
+                  <div v-if="flow.processingReport" class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 space-y-2">
+                    <div class="flex justify-between">
+                      <span>Pages uploaded</span>
+                      <strong class="text-slate-900">{{ flow.processingReport.uploaded_pages }}</strong>
+                    </div>
+                    <div class="flex justify-between text-emerald-700">
+                      <span>Successful pages</span>
+                      <strong>{{ flow.processingReport.successful_pages }}</strong>
+                    </div>
+                    <div v-if="flow.processingReport.low_confidence_pages > 0" class="flex justify-between text-amber-700">
+                      <span>Low-confidence pages</span>
+                      <strong>{{ flow.processingReport.low_confidence_pages }}</strong>
+                    </div>
+                    <div v-if="flow.processingReport.failed_pages > 0" class="flex justify-between text-rose-700">
+                      <span>Failed pages</span>
+                      <strong>{{ flow.processingReport.failed_pages }}</strong>
+                    </div>
+                    <hr class="border-slate-200">
+                    <div class="flex justify-between font-semibold text-slate-900">
+                      <span>Billable pages</span>
+                      <strong>{{ flow.processingReport.payable_pages }}</strong>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>Price per page</span>
+                      <strong class="text-slate-900">{{ reportCurrency }} {{ reportUnitPrice.toFixed(2) }}</strong>
+                    </div>
+                    <div class="flex justify-between text-lg font-bold text-primary-800 pt-1">
+                      <span>Total due</span>
+                      <strong>{{ reportCurrency }} {{ reportTotalAmount.toFixed(2) }}</strong>
+                    </div>
+                  </div>
+                  <div v-else class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+                    Loading processing report...
+                  </div>
+                  <div v-if="flow.job?.payment_deadline_at" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800">
+                    Payment deadline: {{ new Date(flow.job.payment_deadline_at).toLocaleString() }}
+                  </div>
+                </div>
+
+                <!-- Step 4: Payment (post-processing) -->
                 <div v-else-if="flowStep === 'payment'" key="payment" class="space-y-6">
                   <UButton variant="ghost" color="gray" size="sm" icon="i-heroicons-arrow-left" class="-ml-2" @click="goToConfigStep">
                     Back to options
@@ -360,7 +408,7 @@
                       size="lg"
                       placeholder="you@example.com"
                       class="w-full"
-                      :disabled="flow.paymentPolling || paymentConfirmed"
+                      :disabled="flow.paymentPolling"
                     />
                   </UFormField>
                   <UFormField label="M-Pesa phone number">
@@ -370,12 +418,13 @@
                       size="lg"
                       placeholder="254712345678 or 0712345678"
                       class="w-full"
-                      :disabled="flow.paymentPolling || paymentConfirmed"
+                      :disabled="flow.paymentPolling"
                     />
                   </UFormField>
                   <div class="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
                     Amount payable:
-                    <strong class="text-slate-900">{{ paymentAmountLabel }}</strong>
+                    <strong class="text-slate-900">{{ reportCurrency }} {{ reportTotalAmount.toFixed(2) }}</strong>
+                    <span class="ml-1 text-xs text-slate-400">({{ reportPayablePages }} pages × {{ reportCurrency }} {{ reportUnitPrice.toFixed(2) }})</span>
                   </div>
                   <p v-if="paymentSimulationMode" class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
                     enable_payment is OFF. Successful payment is simulated after ~5 seconds.
@@ -390,29 +439,26 @@
                       {{ paymentStatusMessage || 'Check your phone and complete the M-Pesa prompt.' }}
                     </p>
                   </div>
-                  <div v-if="paymentConfirmed" class="rounded-2xl border border-primary-200 bg-primary-50 p-4">
+                  <div v-if="paymentStatusMessage && !flow.paymentPolling" class="rounded-2xl border border-primary-200 bg-primary-50 p-4">
                     <div class="flex items-center gap-2 text-primary-700">
                       <UIcon name="i-heroicons-check-circle" class="h-5 w-5" />
-                      <p class="text-sm font-semibold">Payment confirmed</p>
+                      <p class="text-sm font-semibold">{{ paymentStatusMessage }}</p>
                     </div>
-                    <p class="mt-1 text-sm text-primary-700/90">
-                      Payment received. Starting document processing automatically...
-                    </p>
                   </div>
                 </div>
 
                 <!-- Step 3: Progress / Download / Error -->
                 <div v-else key="progress" class="space-y-6">
                   <UButton
-                    v-if="flow.stage !== 'processing' && flow.stage !== 'uploading'"
+                    v-if="flow.stage !== 'processing' && flow.stage !== 'uploading' && flow.stage !== 'awaiting_payment'"
                     variant="ghost"
                     color="gray"
                     size="sm"
                     icon="i-heroicons-arrow-left"
                     class="-ml-2"
-                    @click="goToPaymentStep"
+                    @click="flow.stage === 'download' ? goToReportStep() : goToConfigStep()"
                   >
-                    {{ paymentIsFree ? 'Back to quote' : 'Back to payment' }}
+                    Back
                   </UButton>
                   <div v-if="flow.stage === 'uploading'" class="space-y-4">
                     <UAlert
@@ -499,8 +545,8 @@
                   </div>
                   <div v-else-if="flow.stage === 'error'" class="space-y-4">
                     <UAlert color="error" :title="flow.error || 'Processing failed.'" />
-                    <UButton size="lg" variant="soft" color="primary" class="rounded-xl" @click="goToPaymentStep">
-                      {{ paymentIsFree ? 'Back to quote' : 'Back to payment' }}
+                    <UButton size="lg" variant="soft" color="primary" class="rounded-xl" @click="goToConfigStep">
+                      Try another file
                     </UButton>
                   </div>
                   <div v-else class="rounded-2xl border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
@@ -519,12 +565,25 @@
 	                    size="lg"
 	                    color="primary"
 	                    class="rounded-xl py-3 text-base font-semibold"
-	                    :disabled="quoteLoading || !!quoteError || paymentPageCount < 1"
-	                    @click="goToPaymentStep"
+	                    :disabled="quoteLoading || !!quoteError"
+	                    @click="goToUploadStep"
 	                  >
-	                    {{ paymentIsFree ? 'Start processing' : 'Next: Payment' }}
+	                    Start processing
 	                  </UButton>
+	                  <p class="text-center text-xs text-slate-500">Payment is collected after processing — you only pay for successful pages.</p>
 	                </div>
+                <div v-else-if="flowStep === 'report'" key="report-footer" class="space-y-3">
+                  <UButton
+                    block
+                    size="lg"
+                    color="primary"
+                    class="rounded-xl py-3 text-base font-semibold"
+                    :disabled="!flow.processingReport"
+                    @click="goToPostPaymentStep"
+                  >
+                    {{ paymentIsFree ? 'Download (no payment required)' : `Pay ${reportCurrency} ${reportTotalAmount.toFixed(2)}` }}
+                  </UButton>
+                </div>
                 <div v-else-if="flowStep === 'payment'" key="payment-footer" class="space-y-3">
                   <UButton
                     block
@@ -532,23 +591,19 @@
                     color="primary"
                     class="rounded-xl py-3 text-base font-semibold"
                     :loading="flow.paymentPolling || uploading"
-                    :disabled="quoteLoading || (flow.paymentPolling || uploading) || (!paymentConfirmed && (!paymentPhone.trim() || !paymentEmail.trim() || paymentPageCount < 1))"
-                    @click="handlePaymentPrimaryAction"
+                    :disabled="flow.paymentPolling || uploading || (!paymentPhone.trim() || !paymentEmail.trim())"
+                    @click="initiatePayment"
                   >
                     {{
                       flow.paymentPolling
                         ? 'Waiting for payment confirmation...'
-                        : uploading
-                          ? 'Uploading document...'
-                          : paymentConfirmed
-                            ? 'Start processing'
-                            : paymentSimulationMode
-                              ? 'Pay (simulation mode)'
-                              : 'Pay with M-Pesa'
+                        : paymentSimulationMode
+                          ? 'Pay (simulation mode)'
+                          : `Pay ${reportCurrency} ${reportTotalAmount.toFixed(2)} with M-Pesa`
                     }}
                   </UButton>
                   <p class="text-center text-xs text-slate-500">
-                    {{ paymentIsFree ? 'No payment required. Processing starts immediately once you continue.' : 'Processing begins automatically after payment confirmation.' }}
+                    Download becomes available immediately after payment confirmation.
                   </p>
                 </div>
                 <div v-else key="progress-footer" class="space-y-3">
@@ -771,7 +826,7 @@ useHead({
   title: 'TenthLining AI - Add tenth-line referencing to legal PDFs automatically',
 })
 
-import { useFlowStore, type AppConfig } from '~/stores/flow'
+import { useFlowStore, type AppConfig, type ProcessingReport } from '~/stores/flow'
 import { useAuthStore, type AuthUser } from '~/stores/auth'
 import brandLogo from '~/assets/images/3.png'
 import mpesaLogo from '~/assets/images/mpesa-logo.png'
@@ -784,7 +839,11 @@ interface JobPayload {
   total_pages: number
   eta_seconds: number | null
   error_message: string | null
+  error_code: string | null
+  payable_pages: number | null
+  payment_deadline_at: string | null
   download_url?: string | null
+  report_url?: string | null
   processing_stage?: string | null
   processing_label?: string | null
   processing_message?: string | null
@@ -817,7 +876,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const isDragging = ref(false)
 
 const flowPanelOpen = ref(false)
-const flowStep = ref<'config' | 'payment' | 'progress'>('config')
+const flowStep = ref<'config' | 'report' | 'payment' | 'progress'>('config')
 
 const paymentEmail = ref('')
 const paymentPhone = ref('')
@@ -867,12 +926,17 @@ let pdfJsLibPromise: Promise<any> | null = null
 let configLoadPromise: Promise<void> | null = null
 let quoteRequestCounter = 0
 
-const paymentConfirmed = computed(() => !!flow.paymentReference)
 const paymentEnabled = computed(() => flow.config?.enable_payment !== false)
 const paymentSimulationMode = computed(() => !paymentEnabled.value)
 const FREE_AMOUNT_EPSILON = 0.0001
-const paymentIsFree = computed(() => paymentPageCount.value > 0 && paymentAmount.value <= FREE_AMOUNT_EPSILON)
-const paymentRequiresCharge = computed(() => paymentPageCount.value > 0 && paymentAmount.value > FREE_AMOUNT_EPSILON)
+const paymentIsFree = computed(() => {
+  const amount = flow.processingReport?.total_amount ?? paymentAmount.value
+  return amount <= FREE_AMOUNT_EPSILON
+})
+const reportPayablePages = computed(() => flow.processingReport?.payable_pages ?? 0)
+const reportTotalAmount = computed(() => flow.processingReport?.total_amount ?? 0)
+const reportUnitPrice = computed(() => flow.processingReport?.unit_price ?? 0)
+const reportCurrency = computed(() => flow.processingReport?.currency ?? flow.config?.currency ?? 'KES')
 const selectedFileCannotBeProcessed = computed(() => Boolean(flow.selectedFile && quoteError.value && !quoteLoading.value))
 const paymentAmountLabel = computed(() => {
   const currency = flow.config?.currency || 'KES'
@@ -959,7 +1023,8 @@ const processingHeartbeatLabel = computed(() => {
 
 const flowPanelHeadline = computed(() => {
   if (flowStep.value === 'config') return 'Your Document'
-  if (flowStep.value === 'payment') return 'Confirm payment details'
+  if (flowStep.value === 'report') return 'Processing Report'
+  if (flowStep.value === 'payment') return 'Complete Payment'
   if (flow.stage === 'uploading') return 'Uploading your PDF'
   if (flow.stage === 'download') return 'Download your processed PDF'
   if (flow.stage === 'error') return 'Processing error'
@@ -968,8 +1033,10 @@ const flowPanelHeadline = computed(() => {
 
 const stepNumber = computed(() => {
   if (flowStep.value === 'config') return 1
-  if (flowStep.value === 'payment') return 2
-  return 3
+  if (flowStep.value === 'progress') return 2
+  if (flowStep.value === 'report') return 3
+  if (flowStep.value === 'payment') return 4
+  return 2
 })
 
 const authTitle = computed(() => authStep.value === 'email'
@@ -1108,7 +1175,7 @@ async function refreshPricingForAuthChange() {
 
   const file = flow.selectedFile
   if (!file) return
-  if (flow.paymentPolling || paymentConfirmed.value || uploading.value) return
+  if (flow.paymentPolling || uploading.value) return
 
   await fetchPaymentQuote(file)
 }
@@ -1238,7 +1305,7 @@ function prepareNewFile(file: File) {
   paymentStatusMessage.value = ''
   paymentAccountNotice.value = null
 
-  flow.paymentReference = null
+  flow.processingReport = null
   flow.paymentPolling = false
   flow.jobId = null
   flow.job = null
@@ -1402,6 +1469,7 @@ function statusBadgeClass(status: string): string {
   if (status === 'failed') return 'border-rose-200 bg-rose-50 text-rose-700'
   if (status === 'deleted') return 'border-slate-200 bg-slate-100 text-slate-700'
   if (status === 'processing') return 'border-amber-200 bg-amber-50 text-amber-700'
+  if (status === 'awaiting_payment') return 'border-violet-200 bg-violet-50 text-violet-700'
   return 'border-primary-200 bg-primary-50 text-primary-800'
 }
 
@@ -1474,13 +1542,8 @@ function uploadPdf(form: FormData): Promise<{ job_id: string }> {
   })
 }
 
-function openFlowPanel(step: 'config' | 'payment' | 'progress') {
+function openFlowPanel(step: 'config' | 'report' | 'payment' | 'progress') {
   if (!flow.selectedFile) return
-
-  if (step === 'payment') {
-    goToPaymentStep()
-    return
-  }
 
   flowStep.value = step
   flowPanelOpen.value = true
@@ -1504,37 +1567,32 @@ function handleSelectedFilePrimaryAction() {
   openFlowPanel('config')
 }
 
-function goToPaymentStep() {
+function goToUploadStep() {
   if (!flow.selectedFile) return
   if (quoteLoading.value) return
-  if (paymentPageCount.value < 1) {
-    panelError.value = quoteError.value || 'Could not determine page count. Please reselect your PDF.'
+
+  if (!auth.isAuthenticated) {
+    openAuthModal('login')
+    authEmail.value = authEmail.value.trim() || paymentEmail.value.trim()
     return
   }
 
-  if (paymentIsFree.value) {
-    panelError.value = null
+  panelError.value = null
+  submitUpload()
+}
 
-    if (!auth.isAuthenticated) {
-      openAuthModal('login')
-      authEmail.value = authEmail.value.trim() || paymentEmail.value.trim()
-      panelError.value = 'Sign in to continue. This document is free and will be processed without payment.'
-      return
-    }
-
-    paymentStatusMessage.value = 'No payment required. Starting processing...'
-    paymentAccountNotice.value = 'No payment required for this document. Processing will start immediately.'
-    submitUpload()
-    return
-  }
-
+function goToPostPaymentStep() {
   flowStep.value = 'payment'
-  flow.stage = 'payment'
 }
 
 function goToConfigStep() {
   flowStep.value = 'config'
   flow.stage = 'config'
+}
+
+function goToReportStep() {
+  flowStep.value = 'report'
+  flowPanelOpen.value = true
 }
 
 function goToProgressStep(stage: 'uploading' | 'processing' = 'processing') {
@@ -1568,7 +1626,7 @@ function resetForAnother() {
 }
 
 async function initiatePayment() {
-  if (flow.paymentPolling || paymentConfirmed.value) return
+  if (flow.paymentPolling) return
 
   panelError.value = null
 
@@ -1586,8 +1644,8 @@ async function initiatePayment() {
     return
   }
 
-  if (paymentPageCount.value < 1) {
-    panelError.value = 'Could not determine page count. Please reselect your PDF.'
+  if (!flow.jobId) {
+    panelError.value = 'No processed job found. Please restart.'
     return
   }
 
@@ -1601,11 +1659,11 @@ async function initiatePayment() {
     paymentStatusMessage.value = 'Sending M-Pesa prompt...'
 
     const body = {
+      job_id: flow.jobId,
       phone,
       email,
-      page_count: paymentPageCount.value,
     }
-    const res = await $fetch<{ reference: string; created_account?: boolean; auth_token?: string | null; user?: AuthUser | null }>(`${apiBase()}/api/payments/initiate`, {
+    const res = await $fetch<{ reference: string; created_account?: boolean; auth_token?: string | null; user?: AuthUser | null; amount?: number; payable_pages?: number }>(`${apiBase()}/api/payments/initiate`, {
       method: 'POST',
       body,
       headers: authHeaders(),
@@ -1657,11 +1715,16 @@ function startPaymentPolling(reference: string) {
       })
 
       if (status.status === 'completed') {
-        flow.setPaymentReference(reference)
         flow.paymentPolling = false
-        paymentStatusMessage.value = 'Payment confirmed. Starting processing...'
+        paymentStatusMessage.value = 'Payment confirmed. Your document is ready.'
         stopPaymentPolling()
-        await submitUpload()
+        // Poll for job completion after payment
+        if (flow.jobId) {
+          await fetchJobSnapshot(flow.jobId)
+        }
+        if (flow.stage !== 'download') {
+          startJobPolling()
+        }
         return
       }
 
@@ -1694,19 +1757,6 @@ function stopPaymentPolling() {
   }
 }
 
-function handlePaymentPrimaryAction() {
-  if (paymentIsFree.value) {
-    submitUpload()
-    return
-  }
-
-  if (paymentConfirmed.value) {
-    submitUpload()
-    return
-  }
-
-  initiatePayment()
-}
 
 async function submitUpload() {
   const file = flow.selectedFile
@@ -1714,11 +1764,6 @@ async function submitUpload() {
   panelError.value = null
   if (!file) {
     panelError.value = 'Please select a PDF first.'
-    return
-  }
-
-  if (paymentRequiresCharge.value && !flow.paymentReference) {
-    panelError.value = 'Payment must be completed before processing.'
     return
   }
 
@@ -1733,6 +1778,7 @@ async function submitUpload() {
   goToProgressStep('uploading')
   flow.jobId = null
   flow.job = null
+  flow.processingReport = null
   flow.error = null
 
   try {
@@ -1741,9 +1787,6 @@ async function submitUpload() {
     form.append('line_interval', String(flow.uploadOptions.line_interval))
     form.append('margin', flow.uploadOptions.margin)
     form.append('font_size_pt', String(flow.uploadOptions.font_size_pt))
-    if (paymentRequiresCharge.value && flow.paymentReference) {
-      form.append('payment_reference', flow.paymentReference)
-    }
 
     const res = await uploadPdf(form)
 
@@ -1755,6 +1798,9 @@ async function submitUpload() {
       total_pages: paymentPageCount.value,
       eta_seconds: null,
       error_message: null,
+      error_code: null,
+      payable_pages: null,
+      payment_deadline_at: null,
       processing_stage: 'analyzing_document',
       processing_label: 'AI is thinking through your document',
       processing_message: 'Our AI is reading the PDF and preparing the line numbering.',
@@ -1767,11 +1813,7 @@ async function submitUpload() {
     await fetchJobSnapshot(res.job_id)
   } catch (e: any) {
     panelError.value = e?.data?.message || 'Could not upload your PDF.'
-    if (paymentRequiresCharge.value) {
-      goToPaymentStep()
-    } else {
-      goToConfigStep()
-    }
+    goToConfigStep()
   } finally {
     uploading.value = false
   }
@@ -1814,8 +1856,13 @@ async function subscribeToJobChannel(jobId: string) {
   const channelName = `job.${jobId}`
   pusherChannel = client.subscribe(channelName)
 
-  pusherChannel.bind('pdf.job.updated', (payload: JobPayload) => {
+  pusherChannel.bind('pdf.job.updated', async (payload: JobPayload) => {
     flow.setJob(payload as any)
+
+    if (payload.status === 'awaiting_payment') {
+      await fetchJobReport(payload.id)
+      goToReportStep()
+    }
 
     if (payload.status === 'completed' || payload.status === 'failed') {
       unsubscribeFromJobChannel()
@@ -1835,8 +1882,26 @@ async function fetchJobSnapshot(jobId: string) {
       headers: authHeaders(),
     })
     flow.setJob(job as any)
+
+    if (job.status === 'awaiting_payment') {
+      await fetchJobReport(jobId)
+      goToReportStep()
+    }
   } catch {
     // Ignore transient fetch issues.
+  }
+}
+
+async function fetchJobReport(jobId: string) {
+  try {
+    const res = await $fetch<{ report: ProcessingReport }>(`${apiBase()}/api/job/${jobId}/report`, {
+      headers: authHeaders(),
+    })
+    if (res.report) {
+      flow.setProcessingReport(res.report)
+    }
+  } catch {
+    // Report fetch failing is non-fatal; amount will show as 0.
   }
 }
 
@@ -1853,7 +1918,12 @@ function startJobPolling() {
 
       flow.setJob(job as any)
 
-      if (job.status === 'completed' || job.status === 'failed') {
+      if (job.status === 'awaiting_payment' && !flow.processingReport) {
+        await fetchJobReport(flow.jobId)
+        goToReportStep()
+      }
+
+      if (job.status === 'completed' || job.status === 'failed' || job.status === 'awaiting_payment') {
         stopJobPolling()
       }
     } catch {
