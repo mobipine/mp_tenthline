@@ -18,6 +18,21 @@
           </div>
         </NuxtLink>
 
+        <nav class="hidden md:flex items-center gap-1 text-sm text-slate-600">
+          <button class="rounded-lg px-3 py-1.5 hover:bg-slate-100 hover:text-slate-900 transition-colors" @click="scrollToTop">
+            Home
+          </button>
+          <button class="rounded-lg px-3 py-1.5 hover:bg-slate-100 hover:text-slate-900 transition-colors" @click="openSupportModal">
+            Support
+          </button>
+          <button class="rounded-lg px-3 py-1.5 hover:bg-slate-100 hover:text-slate-900 transition-colors" @click="openLegalModal('terms')">
+            Terms
+          </button>
+          <button class="rounded-lg px-3 py-1.5 hover:bg-slate-100 hover:text-slate-900 transition-colors" @click="openLegalModal('privacy')">
+            Privacy
+          </button>
+        </nav>
+
         <div class="flex items-center gap-2 sm:gap-3">
           <template v-if="auth.isAuthenticated && auth.user">
             <span class="hidden rounded-full bg-slate-100 px-3 py-1 text-[14px] font-semibold text-slate-700 sm:inline-flex">
@@ -817,6 +832,72 @@
         </div>
       </template>
     </USlideover>
+
+    <!-- Support ticket modal -->
+    <UModal :open="supportModalOpen" @update:open="supportModalOpen = $event">
+      <template #content>
+        <div class="p-6 sm:p-8">
+          <div class="flex items-center justify-between gap-4 mb-6">
+            <h2 class="text-lg font-semibold text-slate-900">Contact Support</h2>
+            <button class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600" @click="supportModalOpen = false">
+              <UIcon name="i-heroicons-x-mark" class="h-5 w-5" />
+            </button>
+          </div>
+
+          <div v-if="supportSubmitted" class="rounded-xl border border-green-200 bg-green-50 px-5 py-6 text-center">
+            <UIcon name="i-heroicons-check-circle" class="mx-auto h-10 w-10 text-green-500" />
+            <p class="mt-3 text-sm font-semibold text-green-800">Message sent!</p>
+            <p class="mt-1 text-sm text-green-700">We'll get back to you as soon as possible.</p>
+            <UButton class="mt-4" variant="soft" color="primary" @click="supportModalOpen = false; supportSubmitted = false">
+              Close
+            </UButton>
+          </div>
+
+          <form v-else class="space-y-4" @submit.prevent="submitSupportTicket">
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-slate-700">Your email</label>
+              <UInput v-model="supportEmail" type="email" placeholder="you@example.com" required class="w-full" />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-slate-700">Subject</label>
+              <UInput v-model="supportSubject" placeholder="Brief description of your issue" required class="w-full" />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-slate-700">Message</label>
+              <UTextarea v-model="supportMessage" placeholder="Describe your issue in detail..." :rows="5" required class="w-full" />
+            </div>
+            <p v-if="supportError" class="text-sm font-medium text-rose-600">{{ supportError }}</p>
+            <UButton type="submit" color="primary" class="w-full" :loading="supportLoading">
+              Send message
+            </UButton>
+          </form>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Legal content modal (Terms / Privacy) -->
+    <UModal :open="legalModalOpen" @update:open="legalModalOpen = $event">
+      <template #content>
+        <div class="flex flex-col max-h-[80vh]">
+          <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-4 shrink-0">
+            <h2 class="text-lg font-semibold text-slate-900">{{ legalModalTitle }}</h2>
+            <button class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600" @click="legalModalOpen = false">
+              <UIcon name="i-heroicons-x-mark" class="h-5 w-5" />
+            </button>
+          </div>
+          <div class="flex-1 overflow-y-auto px-6 py-5">
+            <div v-if="legalLoading" class="space-y-3">
+              <USkeleton v-for="n in 6" :key="n" class="h-4 w-full rounded" />
+            </div>
+            <div v-else-if="legalError" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {{ legalError }}
+            </div>
+            <div v-else-if="legalContent" class="prose prose-sm max-w-none text-slate-700" v-html="legalContent" />
+            <p v-else class="text-sm text-slate-500 italic">No content available yet.</p>
+          </div>
+        </div>
+      </template>
+    </UModal>
   </div>
 </template>
 
@@ -905,6 +986,20 @@ const historyLoading = ref(false)
 const historyJobs = ref<HistoryJob[]>([])
 const downloadingCurrentJob = ref(false)
 const historyDownloadingJobId = ref<string | null>(null)
+
+const supportModalOpen = ref(false)
+const supportEmail = ref('')
+const supportSubject = ref('')
+const supportMessage = ref('')
+const supportLoading = ref(false)
+const supportError = ref<string | null>(null)
+const supportSubmitted = ref(false)
+
+const legalModalOpen = ref(false)
+const legalModalType = ref<'terms' | 'privacy'>('terms')
+const legalContent = ref<string | null>(null)
+const legalLoading = ref(false)
+const legalError = ref<string | null>(null)
 const uploadLoadedBytes = ref(0)
 const uploadTotalBytes = ref(0)
 const uploadBytesPerSecond = ref<number | null>(null)
@@ -1038,6 +1133,10 @@ const stepNumber = computed(() => {
   if (flowStep.value === 'payment') return 4
   return 2
 })
+
+const legalModalTitle = computed(() =>
+  legalModalType.value === 'terms' ? 'Terms & Conditions' : 'Privacy Policy'
+)
 
 const authTitle = computed(() => authStep.value === 'email'
   ? (authMode.value === 'login' ? 'Sign in with email' : 'Create your account')
@@ -2004,6 +2103,56 @@ async function verifyAuthOtp() {
     authError.value = e?.data?.message || 'Could not verify OTP.'
   } finally {
     authLoading.value = false
+  }
+}
+
+function scrollToTop() {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+function openSupportModal() {
+  supportSubmitted.value = false
+  supportError.value = null
+  supportEmail.value = auth.user?.email || ''
+  supportModalOpen.value = true
+}
+
+async function submitSupportTicket() {
+  supportError.value = null
+  supportLoading.value = true
+  try {
+    await $fetch(`${apiBase()}/api/support/tickets`, {
+      method: 'POST',
+      body: {
+        email: supportEmail.value.trim(),
+        subject: supportSubject.value.trim(),
+        message: supportMessage.value.trim(),
+      },
+    })
+    supportSubmitted.value = true
+    supportSubject.value = ''
+    supportMessage.value = ''
+  } catch (e: any) {
+    supportError.value = e?.data?.message || 'Could not send your message. Please try again.'
+  } finally {
+    supportLoading.value = false
+  }
+}
+
+async function openLegalModal(type: 'terms' | 'privacy') {
+  legalModalType.value = type
+  legalContent.value = null
+  legalError.value = null
+  legalLoading.value = true
+  legalModalOpen.value = true
+  try {
+    const endpoint = type === 'terms' ? 'legal/terms' : 'legal/privacy'
+    const res = await $fetch<{ content: string | null }>(`${apiBase()}/api/${endpoint}`)
+    legalContent.value = res.content || null
+  } catch {
+    legalError.value = 'Could not load content. Please try again later.'
+  } finally {
+    legalLoading.value = false
   }
 }
 
