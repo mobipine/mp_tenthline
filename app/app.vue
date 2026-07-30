@@ -59,7 +59,7 @@
 
   
 
-    <NuxtPage v-if="route.path !== '/'" />
+    <NuxtPage />
 
     <main v-if="route.path === '/'" class="relative h-[calc(100vh-60px)] overflow-hidden">
     <div aria-hidden="true" class="pointer-events-none absolute inset-0 -z-10">
