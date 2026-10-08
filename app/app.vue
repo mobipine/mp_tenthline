@@ -832,7 +832,7 @@
 
     <footer class="border-t border-slate-200 bg-white">
       <div class="mx-auto flex w-full max-w-[90rem] flex-col gap-3 px-4 py-5 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-10">
-        <p>© {{ new Date().getFullYear() }} TenthLining AI. Please review all results before filing.</p>
+        <p>© {{ new Date().getFullYear() }} TenthLining AI.</p>
         <nav class="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Footer">
           <NuxtLink to="/terms" class="font-medium transition-colors hover:text-slate-900">Terms &amp; Conditions</NuxtLink>
           <NuxtLink to="/privacy" class="font-medium transition-colors hover:text-slate-900">Privacy Policy</NuxtLink>
