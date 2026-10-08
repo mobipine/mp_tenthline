@@ -2,23 +2,23 @@
   <div class="min-h-screen  text-slate-900">
     <header class="sticky top-0 z-40 border-b border-slate-200/90 bg-white/95 backdrop-blur">
     <!-- <header class="sticky top-0 z-40 border-b border-slate-200/90 bg-transparent/95 backdrop-blur"> -->
-      <div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-10 ">
-        <NuxtLink to="/" class="flex items-center gap-3 h-full">
+      <div class="relative mx-auto flex h-16 w-full max-w-[90rem] items-center px-4 sm:px-6 lg:px-10">
+        <NuxtLink to="/" class="relative z-10 flex h-full items-center gap-3">
           <!-- <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-sm font-bold text-white shadow-md shadow-primary-500/25">
             10
           </span> -->
-          <div class="leading-tight h-full">
+          <div class="flex h-full items-center leading-tight">
             <!-- <p class="text-sm lg:text-[16px] font-semibold tracking-tight text-slate-900">TenthLine</p> -->
             <!-- <p class="text-sm lg:text-[16px] font-medium uppercase tracking-[0.12em] text-slate-500">Tenth Lining</p> -->
-             <img
+            <img
               :src="brandLogo"
               alt="Tenth Lining logo"
-              class="pointer-events-none  h-full"
+              class="pointer-events-none h-11 w-auto max-w-[14rem] object-contain"
             >
           </div>
         </NuxtLink>
 
-        <nav class="hidden md:flex items-center gap-1">
+        <nav class="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex">
           <NuxtLink to="/" class="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors" exact-active-class="bg-slate-100 text-slate-900">
             Home
           </NuxtLink>
@@ -33,7 +33,7 @@
           </NuxtLink>
         </nav>
 
-        <div class="flex items-center gap-2 sm:gap-2.5">
+        <div class="relative z-10 ml-auto flex items-center gap-2 sm:gap-2.5">
           <template v-if="auth.isAuthenticated && auth.user">
             <span class="hidden items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-sm font-medium text-slate-600 lg:inline-flex">
               <UIcon name="i-heroicons-user-circle" class="h-4 w-4 text-slate-400" />
@@ -847,7 +847,7 @@ useHead({
 
 import { useFlowStore, type AppConfig, type ProcessingReport } from '~/stores/flow'
 import { useAuthStore, type AuthUser } from '~/stores/auth'
-import brandLogo from '~/assets/images/3.png'
+import brandLogo from '~/assets/images/brand-logo.png'
 
 const route = useRoute()
 import mpesaLogo from '~/assets/images/mpesa-logo.png'
