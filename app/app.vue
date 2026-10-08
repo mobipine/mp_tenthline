@@ -25,12 +25,6 @@
           <NuxtLink to="/support" class="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors" active-class="bg-slate-100 text-slate-900">
             Support
           </NuxtLink>
-          <NuxtLink to="/terms" class="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors" active-class="bg-slate-100 text-slate-900">
-            Terms
-          </NuxtLink>
-          <NuxtLink to="/privacy" class="rounded-lg px-3.5 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors" active-class="bg-slate-100 text-slate-900">
-            Privacy
-          </NuxtLink>
         </nav>
 
         <div class="relative z-10 ml-auto flex items-center gap-2 sm:gap-2.5">
@@ -514,7 +508,7 @@
                     <UAlert
                       color="primary"
                       icon="i-heroicons-sparkles"
-                      title="AI is thinking through your document"
+                      title="AI is thinking through your document. Results may not be 100% accurate. Please review before filing."
                       :description="processingMessage"
                     />
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-5">
@@ -836,6 +830,18 @@
       </template>
     </USlideover>
 
+    <footer class="border-t border-slate-200 bg-white">
+      <div class="mx-auto flex w-full max-w-[90rem] flex-col gap-3 px-4 py-5 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-10">
+        <p>© {{ new Date().getFullYear() }} TenthLining AI. Please review all results before filing.</p>
+        <nav class="flex flex-wrap items-center gap-x-5 gap-y-2" aria-label="Footer">
+          <NuxtLink to="/terms" class="font-medium transition-colors hover:text-slate-900">Terms &amp; Conditions</NuxtLink>
+          <NuxtLink to="/privacy" class="font-medium transition-colors hover:text-slate-900">Privacy Policy</NuxtLink>
+          <a href="mailto:info@tenthlining.ai" class="font-medium transition-colors hover:text-slate-900">info@tenthlining.ai</a>
+          <a href="mailto:privacy@tenthlining.ai" class="font-medium transition-colors hover:text-slate-900">privacy@tenthlining.ai</a>
+        </nav>
+      </div>
+    </footer>
+
   </div>
 </template>
 
@@ -1009,7 +1015,7 @@ const processingLabel = computed(() => {
 
 const processingMessage = computed(() => {
   const message = String(flow.job?.processing_message || '').trim()
-  return message || 'Our AI is thinking through your document before placing the line numbers.'
+  return message || 'Our AI is reading the document and preparing the line numbering.'
 })
 
 const processingDetail = computed(() => {
